@@ -83,8 +83,12 @@ function polrfun!(
     logl
 end
 
+polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
+
+polrfit(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
+
 """
-    polrmle(y, X, link)
+    fit(AbstractPolrModel, X, y, link, solver)
 
 Fit ordered multinomial model by maximum likelihood estimation.
 
@@ -93,16 +97,19 @@ Fit ordered multinomial model by maximum likelihood estimation.
 * `y::Vector`: integer vector taking values in `1,...,J`.
 * `X::Matrix`: `p x n` covariate matrix excluding intercept.
 * `link::GLM.Link`: `LogitLink()`, `ProbitLink()`, `CauchitLink()`, or `CloglogLink()`.
+* `solver`: `IpoptSolver()` or `NLoptSolver()`
 
 # Output
 
 * `dd:PolrModel`: a `PolrModel` type.
 """
-function polrmle(
-    y::AbstractVector{TY},
+function fit(
+    ::Type{M},
     X::AbstractMatrix,
+    y::AbstractVector{TY},
     link::GLM.Link = LogitLink(),
-    solver = NLoptSolver(algorithm=:LD_SLSQP)) where TY <: Integer
+    solver = NLoptSolver(algorithm=:LD_SLSQP)
+    ) where TY <: Integer where M <: AbstractPolrModel
 
     dd = PolrModel(y, X, link)
     m = MathProgBase.NonlinearModel(solver)

@@ -1,6 +1,6 @@
 module PolrfitTest
 
-using Base.Test, BenchmarkTools, PolrModels
+using Base.Test, BenchmarkTools, DataFrames, PolrModels
 
 srand(123)
 
@@ -34,7 +34,9 @@ m = PolrModel(Y, X, link)
 # solver = NLoptSolver(algorithm=:LD_SLSQP)
 # solver = IpoptSolver() # more stable but take a lot more iterations
 solver = IpoptSolver(mehrotra_algorithm="yes")
-@time dd = polrmle(Y, X, link, solver)
-# [[dd.θ; dd.β] stderr(dd)]
-coeftable(dd)
-end
+@time dd = polrfit(X, Y, link, solver)
+data = [DataFrame(Y=Y) DataFrame(X)]
+@time dd = polr(@formula(Y ~ x1 + x2 + x3 + x4 + x5), data, link, solver)
+# cor(dd)
+
+end # Module PolrfitTest

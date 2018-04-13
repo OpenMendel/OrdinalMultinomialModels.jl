@@ -6,25 +6,32 @@ using Distributions, Reexport, StatsBase
 @reexport using NLopt
 using MathProgBase
 import Base.LinAlg: BlasReal
+import StatsBase: coeftable, fit
 
 export
     # types
+    AbstractPolrModel,
     PolrModel,
     PolrScoreTest,
     # functions
     coeftable,
+    confint,
+    cor,
     deviance,
     dof_residual,
     loglikelihood,
     nobs,
+    polr,
     polrtest,
     polrfun!,
-    polrmle,
+    polrfit,
     polrtest,
     predict,
     rpolr,
     stderr,
     vcov
+
+abstract type AbstractPolrModel <: RegressionModel end
 
 struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
     # dims
@@ -91,10 +98,10 @@ function PolrModel(
 end
 
 coef(m::PolrModel) = [m.θ; m.β]
-deviance(m::PolrModel) = -2polyrfun!(m, false, false)
+deviance(m::PolrModel) = -2polrfun!(m, false, false)
 dof_residual(m::PolrModel) = m.n - m.npar
 fitted(m::PolrModel) = nothing # TODO
-loglikelihood(m::PolrModel) = polyrfun!(m, false, false)
+loglikelihood(m::PolrModel) = polrfun!(m, false, false)
 nobs(m::PolrModel) = m.n
 predict(m::PolrModel) = nothing # TODO
 stderr(m::PolrModel) = sqrt.(diag(m.vcov))
@@ -106,7 +113,19 @@ function coeftable(m::PolrModel)
     tt = cc ./ se
     CoefTable(hcat(cc,se,tt,ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
               ["Estimate","Std.Error","t value", "Pr(>|t|)"],
-              ["x$i" for i = 1:m.npar], 4)
+              [["θ$i" for i = 1:m.J-1]; ["β$i" for i = 1:m.p]], 4)
+end
+
+confint(m::PolrModel, level::Real) = hcat(coef(m), coef(m)) + stderr(m) * quantile(Normal(),(1. - level) / 2.) * [1. -1.]
+confint(m::PolrModel) = confint(m, 0.95)
+
+function cor(m::PolrModel)
+    Σ = vcov(m)
+    invstd = similar(Σ, size(Σ, 1))
+    for i in eachindex(invstd)
+        invstd[i] = 1 / sqrt(Σ[i, i])
+    end
+    scale!(invstd, scale!(Σ, invstd))
 end
 
 include("polrrand.jl")
