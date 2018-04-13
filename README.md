@@ -1,0 +1,2 @@
+# PolrModels
+ordered multinomial models
