@@ -6,7 +6,9 @@ using Distributions, Reexport, StatsBase
 @reexport using NLopt
 using MathProgBase
 import Base.LinAlg: BlasReal
-import StatsBase: coeftable, fit
+import StatsBase: coef, coeftable, confint, deviance, nulldeviance, dof, dof_residual,
+                    loglikelihood, nullloglikelihood, nobs, stderr, vcov, residuals,
+                    predict, fit, model_response, r2, r², adjr2, adjr², PValue
 
 export
     # types
@@ -14,6 +16,7 @@ export
     PolrModel,
     PolrScoreTest,
     # functions
+    coef,
     coeftable,
     confint,
     cor,

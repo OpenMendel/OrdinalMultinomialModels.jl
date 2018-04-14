@@ -104,7 +104,6 @@ function polrfun!(
 end
 
 polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
-# polrfit(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
 
 """
     fit(AbstractPolrModel, X, y, link, solver)
@@ -125,19 +124,20 @@ Fit ordered multinomial model by maximum likelihood estimation.
 function fit(
     ::Type{M},
     X::AbstractMatrix,
-    y::AbstractVector{TY},
+    y::AbstractVector,
     link::GLM.Link = LogitLink(),
     solver = NLoptSolver(algorithm=:LD_SLSQP);
     wts::AbstractVector = similar(X, 0)
-    ) where TY <: Integer where M <: AbstractPolrModel
+    ) where M <: AbstractPolrModel
 
-    dd = PolrModel(X, y, convert(Vector{eltype(X)}, wts), link)
+    ydata = denserank(y)
+    dd = PolrModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
     m = MathProgBase.NonlinearModel(solver)
     lb = fill(-Inf, dd.npar)
     ub = fill( Inf, dd.npar)
     MathProgBase.loadproblem!(m, dd.npar, 0, lb, ub, Float64[], Float64[], :Max, dd)
     # initialize from LS solution
-    β0 = [ones(length(y)) X] \ y
+    β0 = [ones(length(y)) X] \ ydata
     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
     MathProgBase.setwarmstart!(m, par0)
     MathProgBase.optimize!(m)

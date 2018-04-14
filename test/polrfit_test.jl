@@ -1,42 +1,42 @@
 module PolrfitTest
 
-using Base.Test, BenchmarkTools, DataFrames, PolrModels
+using Base.Test, PolrModels, RDatasets
 
-srand(123)
+housing = dataset("MASS", "housing")
+info("Housing example for `polr` function in R package MASS")
 
-n, p, J = 500, 5, 7
-X = randn(n, p)
-β = ones(p)
-θ = collect(1.0:J-1)
-α = [θ[1]; [log(θ[i] - θ[i-1]) for i in 2:J-1]]
-link = LogitLink() # LogitLink(), ProbitLink(), CauchitLink(), CloglogLink()
+@testset "logit link" begin
+    for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
+        houseplr = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
+            LogitLink(), solver; wts = housing[:Freq])
+        @test nobs(houseplr) == 72
+        @test isapprox(deviance(houseplr), 3479.149; rtol=1e-4)
+        @test isapprox(coef(houseplr), [-0.4961353, 0.6907083, 0.5663937, 1.2888191, -0.5723501, -0.3661866, -1.0910149, 0.3602841]; rtol=1e-4)
+        @test isapprox(stderr(houseplr), [0.12485, 0.12547, 0.104653, 0.127156, 0.119238, 0.155173, 0.151486, 0.095536]; rtol=1e-4)
+    end
+end
 
-Y = rpolr(X, β, θ, link)
-# @code_warntype rpolr(X[1, :], β, θ, :logit)
-# @benchmark rpolyr(X, β, θ, :logit)
-# Profile.clear_malloc_data()
-# Profile.clear()
-# @profile rpolyr(X, β, θ, :logit)
-# Profile.print(format=:flat)
+@testset "probit link" begin
+    for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
+        houseplr = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
+            ProbitLink(), solver; wts = housing[:Freq])
+        @test nobs(houseplr) == 72
+        @test isapprox(deviance(houseplr), 3479.689; rtol=1e-4)
+        @test isapprox(coef(houseplr), [-0.29983, 0.42672, 0.34642, 0.78291, -0.34754, -0.21789, -0.66417, 0.22239]; rtol=1e-4)
+        @test isapprox(stderr(houseplr), [0.07615, 0.07640, 0.064137, 0.076426, 0.072291, 0.094766, 0.091800, 0.058123]; rtol=1e-4)
+    end
+end
 
-m = PolrModel(X, Y, link)
-# polrfun!(m, true, true)
-# @code_warntype polrfun!(m, true, true)
-# @benchmark polrfun!(m, true, true)
-# Profile.clear_malloc_data()
-# Profile.clear()
-# @profile polrfun!(m, true, true)
-# Profile.print(format=:flat)
+@testset "cloglog link" begin
+    for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
+        houseplr = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
+            CloglogLink(), solver; wts = housing[:Freq])
+        @test nobs(houseplr) == 72
+        @test isapprox(deviance(houseplr), 3484.053; rtol=1e-4)
+        @test isapprox(coef(houseplr), [-0.79622, 0.05537, 0.38204, 0.91536, -0.40720, -0.28053, -0.74245, 0.20922]; rtol=1e-3)
+        @test isapprox(stderr(houseplr), [0.08965, 0.08560, 0.070260, 0.092560, 0.086071, 0.111149, 0.101331, 0.065106]; rtol=1e-4)
+    end
+end
 
-# solver = IpoptSolver()
-# Gradient based: LD_LBFGS, :LD_MMA, :LD_SLSQP, :LD_CCSAQ, :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_VAR2, :LD_VAR1
-# Gradient free: :LN_COBYLA
-# solver = NLoptSolver(algorithm=:LD_SLSQP)
-# solver = IpoptSolver() # more stable but take a lot more iterations
-solver = IpoptSolver(mehrotra_algorithm="yes")
-@time dd = polr(X, Y, link, solver)
-data = [DataFrame(Y=Y) DataFrame(X)]
-@time dd = polr(@formula(Y ~ x1 + x2 + x3 + x4 + x5), data, link, solver)
-# cor(dd)
 
-end # Module PolrfitTest
+end
