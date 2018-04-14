@@ -149,7 +149,8 @@ function coeftable(m::PolrModel)
               [["θ$i" for i = 1:m.J-1]; ["β$i" for i = 1:m.p]], 4)
 end
 
-confint(m::PolrModel, level::Real) = hcat(coef(m), coef(m)) + stderr(m) * quantile(Normal(),(1. - level) / 2.) * [1. -1.]
+confint(m::PolrModel, level::Real) = hcat(coef(m), coef(m)) +
+    stderr(m) * quantile(Normal(), (1. - level) / 2.) * [1. -1.]
 confint(m::PolrModel) = confint(m, 0.95)
 
 function cor(m::PolrModel)

@@ -1,22 +1,22 @@
 struct PolrScoreTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
     "`q`: number of covariates to test significance"
     q::Int
+    "`Z`: covariates to test significance"
     Z::Matrix{T}
-    "covariates to test significance"
+    "`nm`: fitted null model"
     nm::PolrModel{TY,T,TL}
-    "fitted null model"
+    "`scoreγ`: score vector of γ"
     scoreγ::Vector{T}
-    "score vector of γ"
+    "`∂γ∂θβ`: information of γ vs (θ,β)"
     ∂γ∂θβ::Matrix{T}
-    "information of γ vs (θ,β)"
+    "`∂γ∂γ`: information of γ vs γ"
     ∂γ∂γ::Matrix{T}
-    "information of γ vs γ"
+    "`scratchm1`: working matrix, same size as Z"
     scratchm1::Matrix{T}
-    "working matrix, same size as Z"
+    "`scratchm2`: working matrix, same size as ∂γ∂θβ"
     scratchm2::Matrix{T}
-    "working matrix, same size as ∂γ∂θβ"
+    "`scratchm3`: working matrix, same size as ∂γ∂γ"
     scratchm3::Matrix{T}
-    "working matrix, same size as ∂γ∂γ"
 end
 
 function PolrScoreTest(nm::PolrModel, Z::Matrix)
@@ -28,7 +28,7 @@ function PolrScoreTest(nm::PolrModel, Z::Matrix)
     scratchm1 = similar(Z)
     scratchm2 = similar(∂γ∂θβ)
     scratchm3 = similar(∂γ∂γ)
-    PolyrScoreTest{TY, T, TL}(q, Z, nm, scoreγ, ∂γ∂θβ, ∂γ∂γ, scratchm1, scratchm2, scratchm3)
+    PolrScoreTest{TY, T, TL}(q, Z, nm, scoreγ, ∂γ∂θβ, ∂γ∂γ, scratchm1, scratchm2, scratchm3)
 end
 
 polrtest(nm::PolrModel, Z::AbstractMatrix) = polrtest(PolrScoreTest(nm, Z))
@@ -49,5 +49,5 @@ function polrtest(d::PolrScoreTest)
     d.scratchm3 .= d.∂γ∂γ .- d.scratchm3
     cf = cholfact!(Symmetric(d.scratchm3))
     ts = dot(d.scoreγ, cf \ d.scoreγ)
-    Distributions.ccdf(Chisq(d.q), ts)
+    ccdf(Chisq(d.q), ts)
 end
