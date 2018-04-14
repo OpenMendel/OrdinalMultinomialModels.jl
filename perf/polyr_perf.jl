@@ -1,11 +1,11 @@
 using BenchmarkTools, PolrModels
 
 srand(123)
-n, p, J, q = 1000000, 5, 7, 3
+n, p, J, q = 1_000_000, 5, 7, 1
 Xtrue = randn(n, p + q)
 X = Xtrue[:, 1:p] # null model matrix
 Z = Xtrue[:, p+1:p+q] # covariates to be tested
-βtrue = [ones(p); 0.1ones(q)]
+βtrue = [ones(p); 0.001ones(q)]
 θ = collect(1.0:J-1)
 α = [θ[1]; [log(θ[i] - θ[i-1]) for i in 2:J-1]]
 link = LogitLink() # LogitLink(), ProbitLink(), CauchitLink(), CloglogLink()
@@ -19,12 +19,12 @@ Y = rpolr(Xtrue, βtrue, θ, link)
 # Profile.print(format=:flat)
 
 # m = PolrModel(X, Y, link)
-# polrfun!(m, false, false)
+# @show polrfun!(m, false, false)
 # @code_warntype polrfun!(m, true, true)
-# @benchmark polrfun!(m, true, true)
+# @benchmark polrfun!(m, true, false)
 # Profile.clear_malloc_data()
 # Profile.clear()
-# @profile polyrfun!(m, true, true)
+# @profile polrfun!(m, true, true)
 # Profile.print(format=:flat)
 
 # solver = IpoptSolver()
@@ -37,7 +37,7 @@ solver = IpoptSolver(mehrotra_algorithm="yes")
 coeftable(dd)
 
 # testing
-# polrtest(dd, Z)
 ts = PolrScoreTest(dd, Z)
-# @code_warntype polrtest(PolrScoreTest(dd, Z))
+@show polrtest(ts)
+# @code_warntype polrtest(ts)
 @benchmark polrtest(ts)
