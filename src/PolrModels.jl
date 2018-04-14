@@ -33,51 +33,79 @@ export
 
 abstract type AbstractPolrModel <: RegressionModel end
 
+"""
+    PolrModel
+
+The data, parameters, and various derived variables for the proportional oddss
+logistic regression model.
+"""
 struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
-    # dims
+    # dimensions
+    "`n`: number of observations"
     n::Int
+    "`n`: number of covariates, excluding intercept"
     p::Int
+    "`J`: number of categories"
     J::Int
+    "`npar`: number of parameters"
     npar::Int
     # data
+    "`Y`: response vector"
     Y::Vector{TY}
+    "`X`: covariate matrix"
     X::Matrix{T}
+    "`wts`: prior observation weights, can be empty"
+    wts::Vector{T}
     # parameters
+    "`θ`: intecept parameters, satisfying `θ[1]≤...≤θ[J-1]`"
     θ::Vector{T}
+    "`α`: unconstrained parameterization of `θ`"
     α::Vector{T}
+    "`β`: regression coefficients"
     β::Vector{T}
+    "`link`: link function"
     link::TL
     # working parameters
+    "`η`: linear systematic component `Xβ`"
     η::Vector{T}
+    "`dθdα`: Jacobian dθdα[i, j] = dθj/dαi"
     dθdα::Matrix{T}
-    "Jacobian: dθdα[i, j] = dθj/dαi"
+    "`∇`: gradient wrt (θ, β)"
     ∇::Vector{T}
-    "gradient wrt (θ, β)"
+    "`H`: Hessian wrt (θ, β)"
     H::Matrix{T}
-    "Hessian wrt (θ, β)"
+    "`vcov`:  `inv(-H)`"
     vcov::Matrix{T}
-    "vcov = inv(-H)"
+    "`wtwk`: working weights"
+    wtwk::Vector{T}
+    "`wt∂β``: weight vector for computing derivative, `n x 1`"
     wt∂β::Vector{T}
-    "weight vector, n x 1"
+    "`wt∂θ∂β`: weight matrix for computing Hessian, n x (J - 1)"
     wt∂θ∂β::Matrix{T}
-    "weight matrix, n x (J - 1)"
+    "`wt∂β∂β`: weight vector for computing Hessian, n x 1"
     wt∂β∂β::Vector{T}
-    "weight vector, n x 1"
+    "`scratchm1`: scratch matrix of same size as `X`"
     scratchm1::Matrix{T}
-    "scratch matrix of same size as X"
 end
 
 # Constructor
 function PolrModel(
-    y::Vector{TY},
     X::Matrix{T},
-    link::GLM.Link) where TY <: Integer where T <: BlasReal
+    y::Vector{TY},
+    wts::Vector{T} = similar(X, 0),
+    link::GLM.Link = LogitLink()) where TY <: Integer where T <: BlasReal
     # check y has observations in each category
     yct = counts(y)
     J   = length(yct)
     J < 2 && throw(ArgumentError("Response must have 3 or more levels"))
     for j in 1:J
         yct[j] < 1 && throw(ArgumentError("No observations in category $j"))
+    end
+    if !isempty(wts)
+        lw, ly = length(wts), length(y)
+        lw ≠ ly && throw(ArgumentError("wts has length $lw, should be 0 or $ly"))
+        minw = minimum(wts)
+        minw < 0 && throw(ArgumentError("wts should be nonnegative, found entry "))
     end
     n, p   = size(X)
     npar   = J - 1 + p
@@ -89,13 +117,15 @@ function PolrModel(
     ∇      = zeros(T, J - 1 + p)
     H      = zeros(T, J - 1 + p, J - 1 + p)
     vcov   = zeros(T, J - 1 + p, J - 1 + p)
+    wtwk   = zeros(T, n)
     wt∂β   = zeros(T, n)
     wt∂θ∂β = zeros(T, n, J - 1)
     wt∂β∂β = zeros(T, n)
     scratchm1 = zero(X)
-    PolrModel{eltype(y), eltype(X), typeof(link)}(n, p, J, npar, y, X, θ, α, β,
-        link, η, dθdα, ∇, H, vcov, wt∂β, wt∂θ∂β, wt∂β∂β, scratchm1)
+    PolrModel{eltype(y), eltype(X), typeof(link)}(n, p, J, npar, y, X, wts,
+        θ, α, β, link, η, dθdα, ∇, H, vcov, wtwk, wt∂β, wt∂θ∂β, wt∂β∂β, scratchm1)
 end
+PolrModel(X, y, link) = PolrModel(X, y, similar(X, 0), link)
 
 coef(m::PolrModel) = [m.θ; m.β]
 deviance(m::PolrModel) = -2polrfun!(m, false, false)

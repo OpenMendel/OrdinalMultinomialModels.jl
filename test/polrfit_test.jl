@@ -19,7 +19,7 @@ Y = rpolr(X, β, θ, link)
 # @profile rpolyr(X, β, θ, :logit)
 # Profile.print(format=:flat)
 
-m = PolrModel(Y, X, link)
+m = PolrModel(X, Y, link)
 # polrfun!(m, true, true)
 # @code_warntype polrfun!(m, true, true)
 # @benchmark polrfun!(m, true, true)
@@ -34,7 +34,7 @@ m = PolrModel(Y, X, link)
 # solver = NLoptSolver(algorithm=:LD_SLSQP)
 # solver = IpoptSolver() # more stable but take a lot more iterations
 solver = IpoptSolver(mehrotra_algorithm="yes")
-@time dd = polrfit(X, Y, link, solver)
+@time dd = polr(X, Y, link, solver)
 data = [DataFrame(Y=Y) DataFrame(X)]
 @time dd = polr(@formula(Y ~ x1 + x2 + x3 + x4 + x5), data, link, solver)
 # cor(dd)

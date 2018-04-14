@@ -37,6 +37,8 @@ function polrfun!(
     minζ, maxζ = convert(T, -100), convert(T, 100)
     logl = zero(T)
     for obs in 1:m.n
+        wtobs = isempty(m.wts) ? one(T) : m.wts[obs]
+        wtobs == 0 && continue
         ### log-likelihood
         yobs = m.Y[obs]
         ζ1 = yobs == m.J ? maxζ : m.θ[yobs]   - m.η[obs]
@@ -46,46 +48,63 @@ function polrfun!(
         cumprob1 = GLM.linkinv(m.link, ζ1)
         cumprob2 = GLM.linkinv(m.link, ζ2)
         py = cumprob1 - cumprob2
-        logl += py ≤ 0 ? typemin(T) : log(py)
+        logl += py ≤ 0 ? typemin(T) : wtobs * log(py)
         ### gradent
         needgrad || continue
-        # derivative of α
+        # derivative of θ
         pyinv  = inv(py)
         deriv1 = pyinv * mueta(m.link, ζ1)
         deriv2 = pyinv * mueta(m.link, ζ2)
         derivΔ = deriv1 - deriv2
-        yobs < m.J && (m.∇[yobs  ] += deriv1)
-        yobs > 1   && (m.∇[yobs-1] -= deriv2)
+        yobs < m.J && (m.∇[yobs  ] += wtobs * deriv1)
+        yobs > 1   && (m.∇[yobs-1] -= wtobs * deriv2)
         # derivative of β = wt[obs] * X[:. obs]
         m.wt∂β[obs] = - derivΔ
         ### hessian
         needhess || continue
-        h1::T = pyinv * muetad2(m.link, ζ1)
-        h2::T = pyinv * muetad2(m.link, ζ2)
+        h1 = pyinv * muetad2(m.link, ζ1)
+        h2 = pyinv * muetad2(m.link, ζ2)
         # hessian for ∂θ^2
-        if     yobs > 1  ; m.H[yobs-1, yobs-1] -= h2 + deriv2 * deriv2; end
-        if 1 < yobs < m.J; m.H[yobs  , yobs-1] +=      deriv1 * deriv2; end
-        if     yobs < m.J; m.H[yobs  , yobs  ] += h1 - deriv1 * deriv1; end
+        if     yobs > 1  ; m.H[yobs-1, yobs-1] -= wtobs * (h2 + deriv2 * deriv2); end
+        if 1 < yobs < m.J; m.H[yobs  , yobs-1] += wtobs * (deriv1 * deriv2); end
+        if     yobs < m.J; m.H[yobs  , yobs  ] += wtobs * (h1 - deriv1 * deriv1); end
         # hessian for ∂θ∂β
         yobs > 1   && (m.wt∂θ∂β[obs, yobs - 1] += h2 - deriv2 * derivΔ)
         yobs < m.J && (m.wt∂θ∂β[obs, yobs    ] -= h1 - deriv1 * derivΔ)
         # hessian for ∂β∂β
         m.wt∂β∂β[obs] += h1 - h2 - derivΔ * derivΔ
     end
-    needgrad && (@views At_mul_B!(m.∇[m.J:end], m.X, m.wt∂β))
+    if needgrad
+        if isempty(m.wts)
+            @views At_mul_B!(m.∇[m.J:end], m.X, m.wt∂β)
+
+        else
+            m.wtwk .= m.wts .* m.wt∂β
+            @views At_mul_B!(m.∇[m.J:end], m.X, m.wtwk)
+        end
+    end
     if needhess
-        @views At_mul_B!(m.H[m.J:end, 1:m.J-1], m.X, m.wt∂θ∂β)
-        copy!(m.scratchm1, m.X)
-        scale!(m.wt∂β∂β, m.scratchm1)
-        @views At_mul_B!(m.H[m.J:end, m.J:end], m.X, m.scratchm1)
-        LinAlg.copytri!(m.H, 'L')
+        if isempty(m.wts)
+            @views At_mul_B!(m.H[m.J:end, 1:m.J-1], m.X, m.wt∂θ∂β)
+            copy!(m.scratchm1, m.X)
+            scale!(m.wt∂β∂β, m.scratchm1)
+            @views At_mul_B!(m.H[m.J:end, m.J:end], m.X, m.scratchm1)
+        else
+            copy!(m.scratchm1, m.X)
+            scale!(m.wts, m.scratchm1)
+            @views At_mul_B!(m.H[m.J:end, 1:m.J-1], m.scratchm1, m.wt∂θ∂β)
+            m.wtwk .= m.wts .* m.wt∂β∂β
+            copy!(m.scratchm1, m.X)
+            scale!(m.wtwk, m.scratchm1)
+            @views At_mul_B!(m.H[m.J:end, m.J:end], m.X, m.scratchm1)
+        end
+    LinAlg.copytri!(m.H, 'L')
     end
     logl
 end
 
 polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
-
-polrfit(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
+# polrfit(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
 
 """
     fit(AbstractPolrModel, X, y, link, solver)
@@ -108,10 +127,11 @@ function fit(
     X::AbstractMatrix,
     y::AbstractVector{TY},
     link::GLM.Link = LogitLink(),
-    solver = NLoptSolver(algorithm=:LD_SLSQP)
+    solver = NLoptSolver(algorithm=:LD_SLSQP);
+    wts::AbstractVector = similar(X, 0)
     ) where TY <: Integer where M <: AbstractPolrModel
 
-    dd = PolrModel(y, X, link)
+    dd = PolrModel(X, y, convert(Vector{eltype(X)}, wts), link)
     m = MathProgBase.NonlinearModel(solver)
     lb = fill(-Inf, dd.npar)
     ub = fill( Inf, dd.npar)

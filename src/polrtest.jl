@@ -1,6 +1,6 @@
 struct PolrScoreTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
+    "`q`: number of covariates to test significance"
     q::Int
-    "number of covariates to test significance"
     Z::Matrix{T}
     "covariates to test significance"
     nm::PolrModel{TY,T,TL}
