@@ -1,3 +1,5 @@
+__precompile__()
+
 module PolrModels
 
 using Distributions, Reexport, StatsBase
