@@ -50,7 +50,8 @@ function polrtest(d::PolrScoreTest)
     A_mul_B!(d.scratchm2, d.∂γ∂θβ, d.nm.vcov)
     A_mul_Bt!(d.scratchm3, d.scratchm2, d.∂γ∂θβ)
     d.scratchm3 .= d.∂γ∂γ .- d.scratchm3
-    cf = cholfact!(Symmetric(d.scratchm3))
+    cf = cholfact!(Symmetric(d.scratchm3), Val{true})
+    if rank(cf) < d.q; return 1.0; end
     A_ldiv_B!(d.scratchv1, cf, d.scoreγ)
     ts = dot(d.scoreγ, d.scratchv1)
     ccdf(Chisq(d.q), ts)
