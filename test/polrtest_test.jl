@@ -37,7 +37,7 @@ Y = rpolr(Xtrue, βtrue, θ, link)
 # solver = IpoptSolver() # more stable but take a lot more iterations
 solver = IpoptSolver(mehrotra_algorithm="yes")
 @time dd = polyr_mle(Y, X, link, solver)
-[[dd.θ; dd.β] stderr(dd)]
+[[dd.θ; dd.β] stderror(dd)]
 
 # testing
 # polyrtest(dd, Z)

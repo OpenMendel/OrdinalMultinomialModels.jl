@@ -9,7 +9,7 @@ using Distributions, Reexport, StatsBase
 using MathProgBase
 import Base.LinAlg: BlasReal
 import StatsBase: coef, coeftable, confint, deviance, nulldeviance, dof, dof_residual,
-                    loglikelihood, nullloglikelihood, nobs, stderr, vcov, residuals,
+                    loglikelihood, nullloglikelihood, nobs, stderror, vcov, residuals,
                     predict, fit, model_response, r2, r², adjr2, adjr², PValue
 
 export
@@ -33,7 +33,7 @@ export
     polrtest,
     predict,
     rpolr,
-    stderr,
+    stderror,
     vcov
 
 abstract type AbstractPolrModel <: RegressionModel end
@@ -139,12 +139,12 @@ fitted(m::PolrModel) = nothing # TODO
 loglikelihood(m::PolrModel) = polrfun!(m, false, false)
 nobs(m::PolrModel) = m.n
 predict(m::PolrModel) = nothing # TODO
-stderr(m::PolrModel) = sqrt.(diag(m.vcov))
+stderror(m::PolrModel) = sqrt.(diag(m.vcov))
 vcov(m::PolrModel) = m.vcov
 
 function coeftable(m::PolrModel)
     cc = coef(m)
-    se = stderr(m)
+    se = stderror(m)
     tt = cc ./ se
     CoefTable(hcat(cc,se,tt,ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
               ["Estimate","Std.Error","t value", "Pr(>|t|)"],
@@ -152,7 +152,7 @@ function coeftable(m::PolrModel)
 end
 
 confint(m::PolrModel, level::Real) = hcat(coef(m), coef(m)) +
-    stderr(m) * quantile(Normal(), (1. - level) / 2.) * [1. -1.]
+    stderror(m) * quantile(Normal(), (1. - level) / 2.) * [1. -1.]
 confint(m::PolrModel) = confint(m, 0.95)
 
 function cor(m::PolrModel)
