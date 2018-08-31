@@ -1,6 +1,6 @@
-Distributions
-GLM
-MathProgBase
-NLopt
-Ipopt
-StatsBase
+julia 0.7 
+Distributions 0.16.0
+GLM 1.0.0
+MathProgBase 0.7.5
+NLopt 0.5.1
+Ipopt 0.4.0
