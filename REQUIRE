@@ -4,3 +4,5 @@ GLM
 MathProgBase
 NLopt
 Ipopt
+Reexport
+StatsBase
