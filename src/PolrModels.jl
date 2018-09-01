@@ -2,15 +2,14 @@ __precompile__()
 
 module PolrModels
 
-using Distributions, Reexport, StatsBase
+using Distributions, LinearAlgebra, Reexport
+@reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
 @reexport using NLopt
 using MathProgBase
-import Base.LinAlg: BlasReal
-import StatsBase: coef, coeftable, confint, deviance, nulldeviance, dof, dof_residual,
-                    loglikelihood, nullloglikelihood, nobs, stderror, vcov, residuals,
-                    predict, fit, model_response, r2, r², adjr2, adjr², PValue
+import StatsBase: coef, coeftable, deviance, fit, nobs, stderror
+import LinearAlgebra: BlasReal
 
 export
     # types

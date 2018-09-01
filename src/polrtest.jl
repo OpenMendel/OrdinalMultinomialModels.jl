@@ -39,20 +39,20 @@ polrtest(nm::PolrModel, Z::AbstractMatrix) = polrtest(PolrScoreTest(nm, Z))
 polrtest(nm::PolrModel, Z::AbstractVector) = polrtest(nm, reshape(Z, length(Z), 1))
 
 function polrtest(d::PolrScoreTest)
-    At_mul_B!(d.scoreγ, d.Z, d.nm.wt∂β)
-    @views At_mul_B!(d.∂γ∂θβ[:, 1:d.nm.J-1], d.Z, d.nm.wt∂θ∂β)
-    @views At_mul_B!(d.∂γ∂θβ[:, d.nm.J:end], d.Z, d.nm.scratchm1)
+    mul!(d.scoreγ, transpose(d.Z), d.nm.wt∂β)
+    @views mul!(d.∂γ∂θβ[:, 1:d.nm.J-1], transpose(d.Z), d.nm.wt∂θ∂β)
+    @views mul!(d.∂γ∂θβ[:, d.nm.J:end], transpose(d.Z), d.nm.scratchm1)
     d.∂γ∂θβ .*= -1
-    copy!(d.scratchm1, d.Z)
-    scale!(d.nm.wt∂β∂β, d.scratchm1)
-    At_mul_B!(d.∂γ∂γ, d.Z, d.scratchm1)
+    copyto!(d.scratchm1, d.Z)
+    lmul!(Diagonal(d.nm.wt∂β∂β), d.scratchm1)
+    mul!(d.∂γ∂γ, transpose(d.Z), d.scratchm1)
     d.∂γ∂γ .*= -1
-    A_mul_B!(d.scratchm2, d.∂γ∂θβ, d.nm.vcov)
-    A_mul_Bt!(d.scratchm3, d.scratchm2, d.∂γ∂θβ)
+    mul!(d.scratchm2, d.∂γ∂θβ, d.nm.vcov)
+    mul!(d.scratchm3, d.scratchm2, transpose(d.∂γ∂θβ))
     d.scratchm3 .= d.∂γ∂γ .- d.scratchm3
-    cf = cholfact!(Symmetric(d.scratchm3), Val{true})
+    cf = cholesky!(Symmetric(d.scratchm3), Val(true))
     if rank(cf) < d.q; return 1.0; end
-    A_ldiv_B!(d.scratchv1, cf, d.scoreγ)
+    ldiv!(d.scratchv1, cf, d.scoreγ)
     ts = dot(d.scoreγ, d.scratchv1)
     ccdf(Chisq(d.q), ts)
 end

@@ -24,15 +24,15 @@ function polrfun!(
     needgrad && fill!(m.∇, 0)
     needhess && fill!(m.H, 0)
     # update η according to X and β
-    A_mul_B!(m.η, m.X, m.β)
+    mul!(m.η, m.X, m.β)
     # update θ according to α
     # α[2] to α[J-2] overwritten by their exponential
     fill!(m.dθdα, 0)
     m.θ[1] = m.α[1]
-    m.dθdα[1, :] = 1
+    m.dθdα[1, :] .= 1
     for j in 2:m.J-1
         m.θ[j] = m.θ[j-1] + exp(m.α[j])
-        m.dθdα[j, j:end] = exp(m.α[j])
+        m.dθdα[j, j:end] .= exp(m.α[j])
     end
     minζ, maxζ = convert(T, -100), convert(T, 100)
     logl = zero(T)
@@ -76,27 +76,26 @@ function polrfun!(
     end
     if needgrad
         if isempty(m.wts)
-            @views At_mul_B!(m.∇[m.J:end], m.X, m.wt∂β)
-
+            @views mul!(m.∇[m.J:end], transpose(m.X), m.wt∂β)
         else
             m.wtwk .= m.wts .* m.wt∂β
-            @views At_mul_B!(m.∇[m.J:end], m.X, m.wtwk)
+            @views mul!(m.∇[m.J:end], transpose(m.X), m.wtwk)
         end
     end
     if needhess
         if isempty(m.wts)
-            @views At_mul_B!(m.H[m.J:end, 1:m.J-1], m.X, m.wt∂θ∂β)
-            copy!(m.scratchm1, m.X)
-            scale!(m.wt∂β∂β, m.scratchm1)
-            @views At_mul_B!(m.H[m.J:end, m.J:end], m.X, m.scratchm1)
+            @views mul!(m.H[m.J:end, 1:m.J-1], transpose(m.X), m.wt∂θ∂β)
+            copyto!(m.scratchm1, m.X)
+            lmul!(Diagonal(m.wt∂β∂β), m.scratchm1)
+            @views mul!(m.H[m.J:end, m.J:end], transpose(m.X), m.scratchm1)
         else
-            copy!(m.scratchm1, m.X)
-            scale!(m.wts, m.scratchm1)
-            @views At_mul_B!(m.H[m.J:end, 1:m.J-1], m.scratchm1, m.wt∂θ∂β)
+            copyto!(m.scratchm1, m.X)
+            lmul!(Diagonal(m.wts), m.scratchm1)
+            @views mul!(m.H[m.J:end, 1:m.J-1], transpose(m.scratchm1), m.wt∂θ∂β)
             m.wtwk .= m.wts .* m.wt∂β∂β
-            copy!(m.scratchm1, m.X)
-            scale!(m.wtwk, m.scratchm1)
-            @views At_mul_B!(m.H[m.J:end, m.J:end], m.X, m.scratchm1)
+            copyto!(m.scratchm1, m.X)
+            lmul!(Diagonal(m.wtwk), m.scratchm1)
+            @views mul!(m.H[m.J:end, m.J:end], transpose(m.X), m.scratchm1)
         end
     LinAlg.copytri!(m.H, 'L')
     end
@@ -146,8 +145,8 @@ function fit(
     stat = MathProgBase.status(m)
     stat == :Optimal || warn("Optimization unsuccesful; got $stat")
     xsol = MathProgBase.getsolution(m)
-    copy!(dd.α, 1, xsol, 1, dd.J - 1)
-    copy!(dd.β, 1, xsol, dd.J, dd.p)
+    copyto!(dd.α, 1, xsol, 1, dd.J - 1)
+    copyto!(dd.β, 1, xsol, dd.J, dd.p)
     polrfun!(dd, true, true)
     dd.vcov[:] = inv(-dd.H)
     return dd
@@ -165,17 +164,17 @@ end
 MathProgBase.features_available(m::PolrModel) = [:Grad]
 
 function MathProgBase.eval_f(m::PolrModel, par::Vector)
-    copy!(m.α, 1, par, 1, m.J - 1)
-    copy!(m.β, 1, par, m.J, m.p)
+    copyto!(m.α, 1, par, 1, m.J - 1)
+    copyto!(m.β, 1, par, m.J, m.p)
     polrfun!(m, false, false)
 end
 
 function MathProgBase.eval_grad_f(m::PolrModel, grad::Vector, par::Vector)
-    copy!(m.α, 1, par, 1, m.J - 1)
-    copy!(m.β, 1, par, m.J, m.p)
+    copyto!(m.α, 1, par, 1, m.J - 1)
+    copyto!(m.β, 1, par, m.J, m.p)
     polrfun!(m, true, false)
-    @views A_mul_B!(grad[1:m.J-1], m.dθdα, m.∇[1:m.J-1])
-    copy!(grad, m.J, m.∇, m.J, m.p)
+    @views mul!(grad[1:m.J-1], m.dθdα, m.∇[1:m.J-1])
+    copyto!(grad, m.J, m.∇, m.J, m.p)
 end
 
 """

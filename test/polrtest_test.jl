@@ -1,8 +1,8 @@
-module PolrfitTest
+module PolrtestTest
 
-using Base.Test, BenchmarkTools, PolrModels
+using Test, PolrModels, Random
 
-srand(123)
+Random.seed!(123)
 
 n, p, J, q = 1000, 5, 7, 5
 Xtrue = randn(n, p + q)
@@ -33,14 +33,13 @@ Y = rpolr(Xtrue, βtrue, θ, link)
 # solver = IpoptSolver()
 # Gradient based: LD_LBFGS, :LD_MMA, :LD_SLSQP, :LD_CCSAQ, :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_VAR2, :LD_VAR1
 # Gradient free: :LN_COBYLA
-# solver = NLoptSolver(algorithm=:LD_SLSQP)
+solver = NLoptSolver(algorithm=:LD_LBFGS)
 # solver = IpoptSolver() # more stable but take a lot more iterations
-solver = IpoptSolver(mehrotra_algorithm="yes")
-@time dd = polyr_mle(Y, X, link, solver)
-[[dd.θ; dd.β] stderror(dd)]
+@time dd = polr(X, Y, link, solver)
+# @show [[dd.θ; dd.β] stderror(dd)]
 
 # testing
-# polyrtest(dd, Z)
+polrtest(dd, Z)
 # @code_warntype polyrtest(PolyrScoreTest(dd, Z))
 # ts = PolyrScoreTest(dd, Z)
 # @benchmark polyrtest(ts)
