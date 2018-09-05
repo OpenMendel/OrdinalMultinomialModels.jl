@@ -97,7 +97,7 @@ function polrfun!(
             lmul!(Diagonal(m.wtwk), m.scratchm1)
             @views mul!(m.H[m.J:end, m.J:end], transpose(m.X), m.scratchm1)
         end
-    LinAlg.copytri!(m.H, 'L')
+    LinearAlgebra.copytri!(m.H, 'L')
     end
     logl
 end

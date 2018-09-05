@@ -2,7 +2,8 @@ __precompile__()
 
 module PolrModels
 
-using Distributions, LinearAlgebra, Reexport
+using Libdl, LinearAlgebra
+using Distributions, Reexport
 @reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
@@ -40,7 +41,7 @@ abstract type AbstractPolrModel <: RegressionModel end
 """
     PolrModel
 
-The data, parameters, and various derived variables for the proportional oddss
+Data, parameters, and various derived variables for the proportional odds
 logistic regression model.
 """
 struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
@@ -97,7 +98,7 @@ function PolrModel(
     X::Matrix{T},
     y::Vector{TY},
     wts::Vector{T} = similar(X, 0),
-    link::GLM.Link = LogitLink()) where TY <: Integer where T <: BlasReal
+    link::GLM.Link = LogitLink()) where {TY <: Integer, T <: BlasReal}
     # check y has observations in each category
     yct = counts(y)
     J   = length(yct)
@@ -109,7 +110,7 @@ function PolrModel(
         lw, ly = length(wts), length(y)
         lw ≠ ly && throw(ArgumentError("wts has length $lw, should be 0 or $ly"))
         minw = minimum(wts)
-        minw < 0 && throw(ArgumentError("wts should be nonnegative, found entry "))
+        minw < 0 && throw(ArgumentError("wts should be nonnegative, found entry $minw"))
     end
     n, p   = size(X)
     npar   = J - 1 + p
@@ -160,7 +161,7 @@ function cor(m::PolrModel)
     for i in eachindex(invstd)
         invstd[i] = 1 / sqrt(Σ[i, i])
     end
-    scale!(invstd, scale!(Σ, invstd))
+    lmul!(Diagonal(invstd), rmul!(Σ, Diagonal(invstd)))
 end
 
 include("polrrand.jl")
