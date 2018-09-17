@@ -51,28 +51,38 @@ function polrfun!(
         logl += py ≤ 0 ? typemin(T) : wtobs * log(py)
         ### gradent
         needgrad || continue
-        # derivative of θ
-        pyinv  = inv(py)
-        deriv1 = pyinv * mueta(m.link, ζ1)
-        deriv2 = pyinv * mueta(m.link, ζ2)
-        derivΔ = deriv1 - deriv2
-        yobs < m.J && (m.∇[yobs  ] += wtobs * deriv1)
-        yobs > 1   && (m.∇[yobs-1] -= wtobs * deriv2)
-        # derivative of β = wt[obs] * X[:. obs]
-        m.wt∂β[obs] = - derivΔ
+        if py ≤ 0
+            # derivative of θ
+            yobs < m.J && (m.∇[yobs  ] += typemax(T))
+            yobs > 1   && (m.∇[yobs-1] += typemin(T))
+            # derivative of β = wt[obs] * X[:. obs]
+            m.wt∂β[obs] = zero(T)
+        else
+            # derivative of θ
+            pyinv  = inv(py)
+            deriv1 = pyinv * GLM.mueta(m.link, ζ1)
+            deriv2 = pyinv * GLM.mueta(m.link, ζ2)
+            derivΔ = deriv1 - deriv2
+            yobs < m.J && (m.∇[yobs  ] += wtobs * deriv1)
+            yobs > 1   && (m.∇[yobs-1] -= wtobs * deriv2)
+            # derivative of β = wt[obs] * X[:. obs]
+            m.wt∂β[obs] = - derivΔ
+        end
         ### hessian
         needhess || continue
-        h1 = pyinv * muetad2(m.link, ζ1)
-        h2 = pyinv * muetad2(m.link, ζ2)
-        # hessian for ∂θ^2
-        if     yobs > 1  ; m.H[yobs-1, yobs-1] -= wtobs * (h2 + deriv2 * deriv2); end
-        if 1 < yobs < m.J; m.H[yobs  , yobs-1] += wtobs * (deriv1 * deriv2); end
-        if     yobs < m.J; m.H[yobs  , yobs  ] += wtobs * (h1 - deriv1 * deriv1); end
-        # hessian for ∂θ∂β
-        yobs > 1   && (m.wt∂θ∂β[obs, yobs - 1] += h2 - deriv2 * derivΔ)
-        yobs < m.J && (m.wt∂θ∂β[obs, yobs    ] -= h1 - deriv1 * derivΔ)
-        # hessian for ∂β∂β
-        m.wt∂β∂β[obs] += h1 - h2 - derivΔ * derivΔ
+        if py > 0
+            h1 = pyinv * muetad2(m.link, ζ1)
+            h2 = pyinv * muetad2(m.link, ζ2)
+            # hessian for ∂θ^2
+            if     yobs > 1  ; m.H[yobs-1, yobs-1] -= wtobs * (h2 + deriv2 * deriv2); end
+            if 1 < yobs < m.J; m.H[yobs  , yobs-1] += wtobs * (deriv1 * deriv2); end
+            if     yobs < m.J; m.H[yobs  , yobs  ] += wtobs * (h1 - deriv1 * deriv1); end
+            # hessian for ∂θ∂β
+            yobs > 1   && (m.wt∂θ∂β[obs, yobs - 1] += h2 - deriv2 * derivΔ)
+            yobs < m.J && (m.wt∂θ∂β[obs, yobs    ] -= h1 - deriv1 * derivΔ)
+            # hessian for ∂β∂β
+            m.wt∂β∂β[obs] += h1 - h2 - derivΔ * derivΔ
+        end
     end
     if needgrad
         if isempty(m.wts)
