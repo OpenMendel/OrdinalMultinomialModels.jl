@@ -135,7 +135,7 @@ function fit(
     X::AbstractMatrix,
     y::AbstractVector,
     link::GLM.Link = LogitLink(),
-    solver = NLoptSolver(algorithm=:LD_SLSQP);
+    solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
     wts::AbstractVector = similar(X, 0)
     ) where M <: AbstractPolrModel
 
