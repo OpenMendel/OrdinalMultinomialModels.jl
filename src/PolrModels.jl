@@ -48,7 +48,7 @@ struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.Abstrac
     # dimensions
     "`n`: number of observations"
     n::Int
-    "`n`: number of covariates, excluding intercept"
+    "`p`: number of covariates, excluding intercept"
     p::Int
     "`J`: number of categories"
     J::Int

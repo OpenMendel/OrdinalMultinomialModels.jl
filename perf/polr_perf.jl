@@ -1,7 +1,7 @@
 module PerfTuning
 
 using InteractiveUtils, Libdl, Random
-if VERSION ≥ v"1.0.0"
+if VERSION ≥ v"0.7.0"
     using Profile
 end
 using BenchmarkTools, PolrModels
