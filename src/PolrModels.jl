@@ -2,14 +2,15 @@ __precompile__()
 
 module PolrModels
 
-using Libdl, LinearAlgebra
+using LinearAlgebra
 using Distributions, Reexport
 @reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
 @reexport using NLopt
 using MathProgBase
-import StatsBase: coef, coeftable, deviance, fit, nobs, stderror
+import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
+response, score, stderror, weights
 import LinearAlgebra: BlasReal
 
 export
@@ -23,8 +24,10 @@ export
     confint,
     cor,
     deviance,
+    dof,
     dof_residual,
     loglikelihood,
+    modelmatrix,
     nobs,
     polr,
     polrtest,
@@ -32,9 +35,12 @@ export
     polrfit,
     polrtest,
     predict,
+    response,
     rpolr,
+    score,
     stderror,
-    vcov
+    vcov,
+    weights
 
 abstract type AbstractPolrModel <: RegressionModel end
 
@@ -57,7 +63,7 @@ struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.Abstrac
     # data
     "`Y`: response vector"
     Y::Vector{TY}
-    "`X`: covariate matrix"
+    "`X`: n-by-p covariate matrix"
     X::Matrix{T}
     "`wts`: prior observation weights, can be empty"
     wts::Vector{T}
@@ -134,19 +140,24 @@ PolrModel(X, y, link) = PolrModel(X, y, similar(X, 0), link)
 
 coef(m::PolrModel) = [m.θ; m.β]
 deviance(m::PolrModel) = -2polrfun!(m, false, false)
+dof(m::PolrModel) = m.npar
 dof_residual(m::PolrModel) = m.n - m.npar
 fitted(m::PolrModel) = nothing # TODO
 loglikelihood(m::PolrModel) = polrfun!(m, false, false)
+modelmatrix(m::PolrModel) = m.X
 nobs(m::PolrModel) = m.n
 predict(m::PolrModel) = nothing # TODO
+response(m::PolrModel) = m.y
+score(m::PolrModel) = m.∇
 stderror(m::PolrModel) = sqrt.(diag(m.vcov))
 vcov(m::PolrModel) = m.vcov
+weights(m::PolrModel) = m.wts
 
 function coeftable(m::PolrModel)
     cc = coef(m)
     se = stderror(m)
     tt = cc ./ se
-    CoefTable(hcat(cc,se,tt,ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
+    CoefTable(hcat(cc, se, tt, ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
               ["Estimate","Std.Error","t value", "Pr(>|t|)"],
               [["θ$i" for i = 1:m.J-1]; ["β$i" for i = 1:m.p]], 4)
 end

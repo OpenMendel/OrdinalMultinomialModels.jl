@@ -49,7 +49,7 @@ function polrfun!(
         cumprob2 = GLM.linkinv(m.link, ζ2)
         py = cumprob1 - cumprob2
         logl += py ≤ 0 ? typemin(T) : wtobs * log(py)
-        ### gradent
+        ### gradient
         needgrad || continue
         if py ≤ 0
             # derivative of θ
@@ -120,15 +120,13 @@ polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...
 Fit ordered multinomial model by maximum likelihood estimation.
 
 # Input
-
-* `y::Vector`: integer vector taking values in `1,...,J`.
-* `X::Matrix`: `p x n` covariate matrix excluding intercept.
-* `link::GLM.Link`: `LogitLink()`, `ProbitLink()`, `CauchitLink()`, or `CloglogLink()`.
-* `solver`: `IpoptSolver()` or `NLoptSolver()`
+- `y::Vector`: integer vector taking values in `1,...,J`.
+- `X::Matrix`: `n x p` covariate matrix excluding intercept.
+- `link::GLM.Link`: `LogitLink()`, `ProbitLink()`, `CauchitLink()`, or `CloglogLink()`.
+- `solver`: `IpoptSolver()` or `NLoptSolver()`.
 
 # Output
-
-* `dd:PolrModel`: a `PolrModel` type.
+- `dd:PolrModel`: a `PolrModel` type.
 """
 function fit(
     ::Type{M},

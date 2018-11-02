@@ -53,8 +53,8 @@ display(coeftable(dd))
 @info "score test"
 ts = PolrScoreTest(dd, Z)
 @show polrtest(ts)
-# @info "type inference"
-# @code_warntype polrtest(ts)
+@info "type inference"
+@code_warntype polrtest(ts)
 println()
 @info "benchmark `polrtest`"
 display(@benchmark polrtest($ts))

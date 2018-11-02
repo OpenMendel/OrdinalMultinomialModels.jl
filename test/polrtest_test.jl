@@ -20,7 +20,8 @@ Y = rpolr(Xtrue, βtrue, θ, link)
 # solver = NLoptSolver(algorithm=:LD_LBFGS)
 solver = IpoptSolver() # more stable but take a lot more iterations
 @time dd = polr(X, Y, link, solver)
-@show [[dd.θ; dd.β] stderror(dd)]
+@show dd.θ, dd.β
+@show stderror(dd)
 
 # testing
 @show polrtest(dd, Z)
