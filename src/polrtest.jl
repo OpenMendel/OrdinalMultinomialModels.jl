@@ -1,3 +1,20 @@
+function polrtest(nm::PolrModel, Z::AbstractVecOrMat; test=:score)
+    if test == :score
+        polrtest(PolrScoreTest(nm, reshape(Z, size(Z, 1), size(Z, 2))))
+    elseif test == :LRT
+        polrtest(PolrLrtTest(nm, reshape(Z, size(Z, 1), size(Z, 2))))
+    else
+        throw(ArgumentError("unrecognized test $test"))
+    end
+end
+
+polrtest(nm::StatsModels.DataFrameRegressionModel{<:PolrModel}, Z::AbstractVecOrMat; kwargs...) = 
+polrtest(nm.model, Z; kwargs...)
+
+###########################
+# Score test
+###########################
+
 struct PolrScoreTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
     "`q`: number of covariates to test significance"
     q::Int
@@ -34,12 +51,6 @@ function PolrScoreTest(nm::PolrModel, Z::Matrix)
     PolrScoreTest{TY, T, TL}(q, Z, nm, scoreγ, ∂γ∂θβ, ∂γ∂γ, scratchv1, scratchm1, scratchm2, scratchm3)
 end
 
-polrtest(nm::PolrModel, Z::AbstractMatrix) = polrtest(PolrScoreTest(nm, Z))
-
-polrtest(nm::PolrModel, Z::AbstractVector) = polrtest(nm, reshape(Z, length(Z), 1))
-
-polrtest(nm::StatsModels.DataFrameRegressionModel{<:PolrModel}, Z::AbstractVecOrMat) = 
-polrtest(nm.model, Z)
 
 function polrtest(d::PolrScoreTest)
     #
@@ -86,4 +97,36 @@ function polrtest(d::PolrScoreTest)
     ts = dot(d.scoreγ, d.scratchv1)
     # p-value
     ts ≤ 0 ? 1.0 : ccdf(Chisq(d.q), ts)
+end
+
+
+###########################
+# LRT test
+###########################
+
+struct PolrLrtTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
+    "`q`: number of covariates to test significance"
+    q::Int
+    "`Z`: n-by-q covariate matrix to test significance"
+    Z::Matrix{T}
+    "`nm`: fitted null model"
+    nm::PolrModel{TY,T,TL}
+    "`Xaug`: augmented X matrix for full model"
+    Xaug::Matrix{T}
+end
+
+function PolrLrtTest(nm::PolrModel, Z::AbstractVecOrMat)
+    TY, T, TL = eltype(nm.Y), eltype(nm.X), typeof(nm.link)
+    q = size(Z, 2)
+    Xaug = Matrix{T}(undef, nm.n, nm.p + q)
+    @views copyto!(Xaug[:, 1:nm.p], nm.X)
+    @views copyto!(Xaug[:, nm.p+1:end], Z)
+    PolrLrtTest{TY, T, TL}(q, Z, nm, Xaug)
+end
+
+function polrtest(
+    d::PolrLrtTest; 
+    solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
+    am = polr(d.Xaug, d.nm.Y, d.nm.link, solver; wts = d.nm.wts)
+    ccdf(Chisq(d.q), deviance(d.nm) - deviance(am))
 end

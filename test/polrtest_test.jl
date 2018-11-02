@@ -24,6 +24,7 @@ solver = IpoptSolver() # more stable but take a lot more iterations
 @show stderror(dd)
 
 # testing
-@show polrtest(dd, Z)
+@show polrtest(dd, Z; test = :score)
+@show polrtest(dd, Z; test = :LRT)
 
 end
