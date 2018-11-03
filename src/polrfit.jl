@@ -151,7 +151,7 @@ function fit(
 
     # ouput
     stat = MathProgBase.status(m)
-    stat == :Optimal || warn("Optimization unsuccesful; got $stat")
+    stat == :Optimal || @warn("Optimization unsuccesful; got $stat")
     xsol = MathProgBase.getsolution(m)
     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
     copyto!(dd.β, 1, xsol, dd.J, dd.p)

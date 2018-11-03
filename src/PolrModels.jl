@@ -17,6 +17,7 @@ export
     # types
     AbstractPolrModel,
     PolrModel,
+    PolrLrtTest,
     PolrScoreTest,
     # functions
     coef,
