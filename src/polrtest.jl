@@ -93,10 +93,15 @@ function polrtest(d::PolrScoreTest)
     mul!(d.scratchm3, d.scratchm2, transpose(d.∂γ∂θβ))
     d.scratchm3 .= d.∂γ∂γ .- d.scratchm3
     # compute ts = R^T (Q - W' P^{-1} W)^{-1} R
-    ldiv!(d.scratchv1, bunchkaufman!(Symmetric(d.scratchm3)), d.scoreγ)
-    ts = dot(d.scoreγ, d.scratchv1)
-    # p-value
-    ts ≤ 0 ? 1.0 : ccdf(Chisq(d.q), ts)
+    bkfact = bunchkaufman!(Symmetric(d.scratchm3), check=false)
+    if issuccess(bkfact)
+        ldiv!(d.scratchv1, bkfact, d.scoreγ)
+        ts = dot(d.scoreγ, d.scratchv1)
+        pval = ts ≤ 0 ? 1.0 : ccdf(Chisq(d.q), ts)
+    else # Q - W' P^{-1} W is singular
+        pval = 1.0
+    end
+    pval
 end
 
 
