@@ -2,20 +2,22 @@ __precompile__()
 
 module PolrModels
 
-using Distributions, Reexport, StatsBase
+using LinearAlgebra
+using Distributions, Reexport
+@reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
 @reexport using NLopt
 using MathProgBase
-import Base.LinAlg: BlasReal
-import StatsBase: coef, coeftable, confint, deviance, nulldeviance, dof, dof_residual,
-                    loglikelihood, nullloglikelihood, nobs, stderror, vcov, residuals,
-                    predict, fit, model_response, r2, r², adjr2, adjr², PValue
+import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
+response, score, stderror, weights
+import LinearAlgebra: BlasReal
 
 export
     # types
     AbstractPolrModel,
     PolrModel,
+    PolrLrtTest,
     PolrScoreTest,
     # functions
     coef,
@@ -23,8 +25,10 @@ export
     confint,
     cor,
     deviance,
+    dof,
     dof_residual,
     loglikelihood,
+    modelmatrix,
     nobs,
     polr,
     polrtest,
@@ -32,23 +36,26 @@ export
     polrfit,
     polrtest,
     predict,
+    response,
     rpolr,
+    score,
     stderror,
-    vcov
+    vcov,
+    weights
 
 abstract type AbstractPolrModel <: RegressionModel end
 
 """
     PolrModel
 
-The data, parameters, and various derived variables for the proportional oddss
+Data, parameters, and various derived variables for the proportional odds
 logistic regression model.
 """
 struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
     # dimensions
     "`n`: number of observations"
     n::Int
-    "`n`: number of covariates, excluding intercept"
+    "`p`: number of covariates, excluding intercept"
     p::Int
     "`J`: number of categories"
     J::Int
@@ -57,7 +64,7 @@ struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.Abstrac
     # data
     "`Y`: response vector"
     Y::Vector{TY}
-    "`X`: covariate matrix"
+    "`X`: n-by-p covariate matrix"
     X::Matrix{T}
     "`wts`: prior observation weights, can be empty"
     wts::Vector{T}
@@ -98,7 +105,7 @@ function PolrModel(
     X::Matrix{T},
     y::Vector{TY},
     wts::Vector{T} = similar(X, 0),
-    link::GLM.Link = LogitLink()) where TY <: Integer where T <: BlasReal
+    link::GLM.Link = LogitLink()) where {TY <: Integer, T <: BlasReal}
     # check y has observations in each category
     yct = counts(y)
     J   = length(yct)
@@ -110,7 +117,7 @@ function PolrModel(
         lw, ly = length(wts), length(y)
         lw ≠ ly && throw(ArgumentError("wts has length $lw, should be 0 or $ly"))
         minw = minimum(wts)
-        minw < 0 && throw(ArgumentError("wts should be nonnegative, found entry "))
+        minw < 0 && throw(ArgumentError("wts should be nonnegative, found entry $minw"))
     end
     n, p   = size(X)
     npar   = J - 1 + p
@@ -134,19 +141,24 @@ PolrModel(X, y, link) = PolrModel(X, y, similar(X, 0), link)
 
 coef(m::PolrModel) = [m.θ; m.β]
 deviance(m::PolrModel) = -2polrfun!(m, false, false)
+dof(m::PolrModel) = m.npar
 dof_residual(m::PolrModel) = m.n - m.npar
 fitted(m::PolrModel) = nothing # TODO
 loglikelihood(m::PolrModel) = polrfun!(m, false, false)
+modelmatrix(m::PolrModel) = m.X
 nobs(m::PolrModel) = m.n
 predict(m::PolrModel) = nothing # TODO
+response(m::PolrModel) = m.y
+score(m::PolrModel) = m.∇
 stderror(m::PolrModel) = sqrt.(diag(m.vcov))
 vcov(m::PolrModel) = m.vcov
+weights(m::PolrModel) = m.wts
 
 function coeftable(m::PolrModel)
     cc = coef(m)
     se = stderror(m)
     tt = cc ./ se
-    CoefTable(hcat(cc,se,tt,ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
+    CoefTable(hcat(cc, se, tt, ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
               ["Estimate","Std.Error","t value", "Pr(>|t|)"],
               [["θ$i" for i = 1:m.J-1]; ["β$i" for i = 1:m.p]], 4)
 end
@@ -161,7 +173,7 @@ function cor(m::PolrModel)
     for i in eachindex(invstd)
         invstd[i] = 1 / sqrt(Σ[i, i])
     end
-    scale!(invstd, scale!(Σ, invstd))
+    lmul!(Diagonal(invstd), rmul!(Σ, Diagonal(invstd)))
 end
 
 include("polrrand.jl")

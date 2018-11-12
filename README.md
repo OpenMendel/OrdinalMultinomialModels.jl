@@ -1,2 +1,3 @@
 # PolrModels
-ordered multinomial models
+
+PolrModels.jl provides utilities to fit ordered multinomial models.

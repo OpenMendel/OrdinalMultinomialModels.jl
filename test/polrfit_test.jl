@@ -1,9 +1,9 @@
 module PolrfitTest
 
-using Base.Test, PolrModels, RDatasets
+using Test, PolrModels, RDatasets
 
 housing = dataset("MASS", "housing")
-info("Housing example for `polr` function in R package MASS")
+@info "Housing example for `polr` function in R package MASS"
 
 @testset "logit link" begin
     for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]

@@ -1,8 +1,8 @@
-module PolrfitTest
+module PolrtestTest
 
-using Base.Test, BenchmarkTools, PolrModels
+using Test, PolrModels, Random
 
-srand(123)
+Random.seed!(123)
 
 n, p, J, q = 1000, 5, 7, 5
 Xtrue = randn(n, p + q)
@@ -14,35 +14,17 @@ Z = Xtrue[:, p+1:p+q] # covariates to be tested
 link = LogitLink() # LogitLink(), ProbitLink(), CauchitLink(), CloglogLink()
 
 Y = rpolr(Xtrue, βtrue, θ, link)
-# @code_warntype rpolyr(X[1, :], β, θ, :logit)
-# @benchmark rpolyr(X, β, θ, :logit)
-# Profile.clear_malloc_data()
-# Profile.clear()
-# @profile rpolyr(X, β, θ, :logit)
-# Profile.print(format=:flat)
 
-# m = PolyrModel(Y, X, link)
-# polyrfun!(m, false, false)
-# @code_warntype polyrfun!(m, true, true)
-# @benchmark polyrfun!(m, true, true)
-# Profile.clear_malloc_data()
-# Profile.clear()
-# @profile polyrfun!(m, true, true)
-# Profile.print(format=:flat)
-
-# solver = IpoptSolver()
 # Gradient based: LD_LBFGS, :LD_MMA, :LD_SLSQP, :LD_CCSAQ, :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_VAR2, :LD_VAR1
 # Gradient free: :LN_COBYLA
-# solver = NLoptSolver(algorithm=:LD_SLSQP)
-# solver = IpoptSolver() # more stable but take a lot more iterations
-solver = IpoptSolver(mehrotra_algorithm="yes")
-@time dd = polyr_mle(Y, X, link, solver)
-[[dd.θ; dd.β] stderror(dd)]
+# solver = NLoptSolver(algorithm=:LD_LBFGS)
+solver = IpoptSolver() # more stable but take a lot more iterations
+@time dd = polr(X, Y, link, solver)
+@show dd.θ, dd.β
+@show stderror(dd)
 
 # testing
-# polyrtest(dd, Z)
-# @code_warntype polyrtest(PolyrScoreTest(dd, Z))
-# ts = PolyrScoreTest(dd, Z)
-# @benchmark polyrtest(ts)
+@show polrtest(dd, Z; test = :score)
+@show polrtest(dd, Z; test = :LRT)
 
 end
