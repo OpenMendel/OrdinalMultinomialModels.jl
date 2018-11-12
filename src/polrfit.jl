@@ -1,5 +1,5 @@
 """
-    polrfun!(m, [needgrad=false], [needhess=false])
+polrfun!(m, [needgrad=false], [needhess=false])
 
 Evaluate the log-likelihood and optionally gradient and Hessian of
 ordered multinomial model.
@@ -19,7 +19,7 @@ function polrfun!(
     m::PolrModel,
     needgrad = false,
     needhess = false)
-
+    
     T = eltype(m.X)
     needgrad && fill!(m.∇, 0)
     needhess && fill!(m.H, 0)
@@ -107,7 +107,7 @@ function polrfun!(
             lmul!(Diagonal(m.wtwk), m.scratchm1)
             @views mul!(m.H[m.J:end, m.J:end], transpose(m.X), m.scratchm1)
         end
-    LinearAlgebra.copytri!(m.H, 'L')
+        LinearAlgebra.copytri!(m.H, 'L')
     end
     logl
 end
@@ -115,7 +115,7 @@ end
 polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
 
 """
-    fit(AbstractPolrModel, X, y, link, solver)
+fit(AbstractPolrModel, X, y, link, solver)
 
 Fit ordered multinomial model by maximum likelihood estimation.
 
@@ -136,7 +136,7 @@ function fit(
     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
     wts::AbstractVector = similar(X, 0)
     ) where M <: AbstractPolrModel
-
+    
     ydata = denserank(y)
     dd = PolrModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
     m = MathProgBase.NonlinearModel(solver)
@@ -148,7 +148,7 @@ function fit(
     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
     MathProgBase.setwarmstart!(m, par0)
     MathProgBase.optimize!(m)
-
+    
     # ouput
     stat = MathProgBase.status(m)
     stat == :Optimal || @warn("Optimization unsuccesful; got $stat")
@@ -156,17 +156,22 @@ function fit(
     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
     copyto!(dd.β, 1, xsol, dd.J, dd.p)
     polrfun!(dd, true, true)
-    dd.vcov[:] = inv(-dd.H)
+    Hbk = bunchkaufman!(Symmetric(dd.H), check=false)
+    if issuccess(Hbk)
+        dd.vcov[:] = -inv(Hbk)
+    else # Hessian is singular
+        dd.vcov .= Inf
+    end
     return dd
 end
 
 function MathProgBase.initialize(m::PolrModel,
-  requested_features::Vector{Symbol})
-  for feat in requested_features
-    if !(feat in [:Grad])
-      error("Unsupported feature $feat")
+    requested_features::Vector{Symbol})
+    for feat in requested_features
+        if !(feat in [:Grad])
+            error("Unsupported feature $feat")
+        end
     end
-  end
 end
 
 MathProgBase.features_available(m::PolrModel) = [:Grad]
@@ -186,14 +191,14 @@ function MathProgBase.eval_grad_f(m::PolrModel, grad::Vector, par::Vector)
 end
 
 """
-    muetad2(::CuachitLink, η)
+muetad2(::CuachitLink, η)
 
 `d^2μ/dη^2` for CauchitLink.
 """
 muetad2(::CauchitLink, η) = - 2η / (pi * (one(η) + abs2(η)))^2
 
 """
-    muetad2(::CloglogLink, η)
+muetad2(::CloglogLink, η)
 
 `d^2μ/dη^2` for CloglogLink.
 """
@@ -203,7 +208,7 @@ function muetad2(::CloglogLink, η::T) where T<:Real
 end
 
 """
-    muetad2(::LogitLink, η)
+muetad2(::LogitLink, η)
 
 `d^2μ/dη^2` for LogitLink.
 """
@@ -215,7 +220,7 @@ function muetad2(::LogitLink, η)
 end
 
 """
-    muetad2(::ProbitLink, η)
+muetad2(::ProbitLink, η)
 
 `d^2μ/dη^2` for ProbitLink.
 """
