@@ -1,17 +1,19 @@
 """
-polrfun!(m, [needgrad=false], [needhess=false])
+    polrfun!(m, [needgrad=false], [needhess=false])
 
 Evaluate the log-likelihood and optionally gradient and Hessian of
 ordered multinomial model.
 
-# Input
+# Positional arguments
 
-* `m::PolrModel`: a `PolrModel` type. Log-likelihood is evaluated based on
-fields `Y`, `X`, `α`, `β`, and `link` of `m`.
+- `m::PolrModel`: a `PolrModel` type. Log-likelihood is evaluated based on
+fields `Y`, `X`, `α`, `β`, and `link` of `m`.  
+- `needgrad::Bool=false`: evaluate gradient or not.  
+- `needhess::Bool=false`: evaluate Hessian or not.
 
 # Output
 
-* `logl`: log-likelihood. If `needgrad=true`, field `m.∇` is overwritten by the
+- `logl`: log-likelihood. If `needgrad=true`, field `m.∇` is overwritten by the
 gradient (score) with respect to `(θ, β)`. If `needhess=true`, field `m.H` is
 overwritten by the Hessian with respect to `(θ, β)`.
 """
@@ -112,10 +114,33 @@ function polrfun!(
     logl
 end
 
+"""
+    polr(formula, df, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
+    polr(X, y, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
+
+Fit ordered multinomial model by maximum likelihood estimation.
+
+# Positional arguments
+
+- `formula::Formula`: a model formula specifying responses and regressors.
+- `df::DataFrame`: a dataframe. Response variable should take integer values 
+    starting from 1.
+- `y::Vector`: integer vector taking values in `1,...,J`.
+- `X::Matrix`: `n x p` covariate matrix excluding intercept.
+- `link::GLM.Link`: `LogitLink()` (default), `ProbitLink()`, `CauchitLink()`, or `CloglogLink()`.
+- `solver`: `NLoptSolver()` (default) or `IpoptSolver()`.
+
+# Keyword arguments
+
+- `wts::AbstractVector=similar(X, 0)`: observation weights.
+
+# Output
+- `dd:PolrModel`: a `PolrModel` type.
+"""
 polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
 
 """
-fit(AbstractPolrModel, X, y, link, solver)
+    fit(AbstractPolrModel, X, y, link, solver)
 
 Fit ordered multinomial model by maximum likelihood estimation.
 
