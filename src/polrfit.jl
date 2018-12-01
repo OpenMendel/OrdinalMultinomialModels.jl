@@ -95,7 +95,6 @@ function polrfun!(
             derivjp1   = j == m.J-1 ? zero(T) : GLM.mueta(m.link, ηjp1)
             # FIM for ∂θ^2
             m.FIM[j, j] += wtobs * (pjinv + pjp1inv) * derivj * derivj
-            obs == m.n && (@show m.FIM[j, j])
             if j > 1
                 m.FIM[j, j-1] -= wtobs * pjinv * derivj * derivjm1
             end
@@ -104,6 +103,7 @@ function polrfun!(
                 pjp1inv * derivjp1) * derivj
             # FIM for ∂β∂β, weights only
             m.wt∂β∂β[obs] += pjinv * (derivj - derivjm1)^2
+            j == m.J - 1 &&  (m.wt∂β∂β[obs] += pjp1inv * derivj * derivj) # p_iJ
         end
     end
     if needgrad
@@ -205,9 +205,6 @@ function fit(
     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
     copyto!(dd.β, 1, xsol, dd.J, dd.p)
     polrfun!(dd, true, true)
-    @show dd.FIM[1:2, 1:2]
-    @show dd.FIM
-    @show eigvals(Symmetric(dd.FIM))
     FIMbk = bunchkaufman(Symmetric(dd.FIM), check=false)
     if issuccess(FIMbk)
         dd.vcov[:] = inv(FIMbk)
