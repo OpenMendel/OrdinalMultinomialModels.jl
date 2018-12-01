@@ -84,9 +84,9 @@ struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.Abstrac
     dθdα::Matrix{T}
     "`∇`: gradient wrt (θ, β)"
     ∇::Vector{T}
-    "`H`: Hessian wrt (θ, β)"
-    H::Matrix{T}
-    "`vcov`:  `inv(-H)`"
+    "`FIM`: Fisher information matrix at (θ, β)"
+    FIM::Matrix{T}
+    "`vcov`:  `inv(FIM)`"
     vcov::Matrix{T}
     "`wtwk`: working weights"
     wtwk::Vector{T}
@@ -127,7 +127,7 @@ function PolrModel(
     β      = zeros(T, p)
     dθdα   = zeros(T, J - 1, J - 1)
     ∇      = zeros(T, J - 1 + p)
-    H      = zeros(T, J - 1 + p, J - 1 + p)
+    FIM    = zeros(T, J - 1 + p, J - 1 + p)
     vcov   = zeros(T, J - 1 + p, J - 1 + p)
     wtwk   = zeros(T, n)
     wt∂β   = zeros(T, n)
@@ -135,7 +135,7 @@ function PolrModel(
     wt∂β∂β = zeros(T, n)
     scratchm1 = zero(X)
     PolrModel{eltype(y), eltype(X), typeof(link)}(n, p, J, npar, y, X, wts,
-        θ, α, β, link, η, dθdα, ∇, H, vcov, wtwk, wt∂β, wt∂θ∂β, wt∂β∂β, scratchm1)
+        θ, α, β, link, η, dθdα, ∇, FIM, vcov, wtwk, wt∂β, wt∂θ∂β, wt∂β∂β, scratchm1)
 end
 PolrModel(X, y, link) = PolrModel(X, y, similar(X, 0), link)
 

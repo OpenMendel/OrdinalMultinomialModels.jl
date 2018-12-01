@@ -34,10 +34,6 @@ versioninfo()
 using PolrModels, BenchmarkTools
 ```
 
-    ┌ Info: Recompiling stale cache file /Users/huazhou/.julia/compiled/v0.7/PolrModels/KD4ui.ji for PolrModels [b51826c6-2bc1-4eb0-a3af-c080fd29f1d0]
-    └ @ Base loading.jl:1185
-
-
 ## Example data
 
 `housing` is a data set from R package [MASS](https://cran.r-project.org/web/packages/MASS/index.html). The outcome of interest is `Sat` (satisfication) that takes values `Low`, `Medium`, or `High`. Predictors include `Infl` (inflation, categorical), `Type` (housing type, categorical), and `Cont` (categorical). `Freq` codes number of observation for each combination of levels.
@@ -98,14 +94,14 @@ house_po = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496141  0.124847 -3.97398   0.0002
-    θ2    0.690706  0.125472  5.50486    <1e-6
-    β1    0.566392  0.104653   5.4121    <1e-6
-    β2     1.28881  0.127156  10.1357   <1e-14
-    β3   -0.572352  0.119238 -4.80008    <1e-5
-    β4   -0.366182  0.155173 -2.35983   0.0213
-    β5    -1.09101  0.151486 -7.20206    <1e-9
-    β6    0.360284 0.0955358   3.7712   0.0004
+    θ1   -0.496141  0.124541 -3.98376   0.0002
+    θ2    0.690706  0.125212  5.51628    <1e-6
+    β1    0.566392  0.104963  5.39611    <1e-5
+    β2     1.28881  0.126705  10.1718   <1e-14
+    β3   -0.572352  0.118747 -4.81991    <1e-5
+    β4   -0.366182  0.156766 -2.33586   0.0226
+    β5    -1.09101  0.151514 -7.20075    <1e-9
+    β6    0.360284 0.0953574  3.77825   0.0003
 
 
 
@@ -115,7 +111,7 @@ house_po = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
     It is necessary to **exclude intercept** in formula because ordered multinomial model automatically includes intercept for proper modeling.
 
 
-Since there are $J=3$ categories in `Sat`, the fitted model has 2 intercept parameters  that satisfy $\theta_1 \le \theta_2$. $\beta_1, \beta_2$ are  regression coefficients for `Infl` (3 levels), $\beta_3, \beta_4, \beta_5$ for `Type` (4 levels), and $\beta_6$ for `Cont` (2 levels). 
+Since there are $J=3$ categories in `Sat`, the fitted model has 2 intercept parameters $\theta_1$ and $\theta_2$ that satisfy $\theta_1 \le \theta_2$. $\beta_1, \beta_2$ are  regression coefficients for `Infl` (3 levels), $\beta_3, \beta_4, \beta_5$ for `Type` (4 levels), and $\beta_6$ for `Cont` (2 levels). 
 
 Deviance (-2 loglikelihood) of the fitted model is
 
@@ -142,14 +138,14 @@ coef(house_po)
 
 
     8-element Array{Float64,1}:
-     -0.49614061341454607
-      0.6907056439400201 
-      0.5663915864515744 
-      1.2888108250034271 
-     -0.5723518911944651 
-     -0.3661822718560424 
-     -1.091011574737562  
-      0.3602844417528419 
+     -0.4961406134145464 
+      0.6907056439400198 
+      0.5663915864515743 
+      1.288810825003427  
+     -0.5723518911944654 
+     -0.36618227185604263
+     -1.0910115747375622 
+      0.36028444175284197
 
 
 
@@ -164,14 +160,14 @@ stderror(house_po)
 
 
     8-element Array{Float64,1}:
-     0.12484725578571425
-     0.12547194322484329
-     0.10465278622775007
-     0.12715610075413825
-     0.1192380112188433 
-     0.15517334323365534
-     0.15148598827529147
-     0.09553578572175248
+     0.12454076603722913
+     0.1252121074560087 
+     0.10496298447216806
+     0.1267047666889804 
+     0.11874734570694132
+     0.1567658347801272 
+     0.15151363694373737
+     0.09535742939732537
 
 
 
@@ -194,14 +190,14 @@ house_op = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, ProbitLink(),
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.299829 0.0761537 -3.93716   0.0002
-    θ2     0.42672 0.0764043  5.58502    <1e-6
-    β1    0.346423 0.0641371  5.40129    <1e-5
-    β2    0.782914 0.0764262  10.2441   <1e-14
-    β3   -0.347538 0.0722909 -4.80749    <1e-5
-    β4   -0.217889 0.0947661 -2.29923   0.0248
-    β5   -0.664175    0.0918 -7.23502    <1e-9
-    β6    0.222386 0.0581227  3.82616   0.0003
+    θ1   -0.299829 0.0761614 -3.93676   0.0002
+    θ2     0.42672 0.0763991   5.5854    <1e-6
+    β1    0.346423 0.0641796  5.39771    <1e-5
+    β2    0.782914 0.0762645  10.2658   <1e-14
+    β3   -0.347538 0.0722116 -4.81278    <1e-5
+    β4   -0.217889 0.0955741 -2.27979   0.0260
+    β5   -0.664175 0.0919294 -7.22484    <1e-9
+    β6    0.222386 0.0581214  3.82624   0.0003
 
 
 
@@ -237,14 +233,14 @@ house_ph = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, CloglogLink(),
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.796225 0.0896499 -8.88149   <1e-12
-    θ2   0.0553535 0.0855972 0.646674   0.5202
-    β1    0.382045 0.0702599  5.43759    <1e-6
-    β2    0.915384 0.0925608  9.88954   <1e-13
-    β3   -0.407228 0.0860718 -4.73125    <1e-4
-    β4    -0.28056   0.11115 -2.52416   0.0141
-    β5   -0.742481  0.101331 -7.32728    <1e-9
-    β6    0.209235 0.0651057  3.21377   0.0021
+    θ1   -0.796225 0.0904739  -8.8006   <1e-11
+    θ2   0.0553535 0.0866662 0.638697   0.5253
+    β1    0.382045 0.0701219  5.44829    <1e-6
+    β2    0.915384 0.0924967  9.89639   <1e-13
+    β3   -0.407228 0.0861331 -4.72789    <1e-4
+    β4    -0.28056  0.112949 -2.48396   0.0156
+    β5   -0.742481  0.102084 -7.27321    <1e-9
+    β6    0.209235 0.0653756   3.2005   0.0021
 
 
 
@@ -257,11 +253,11 @@ deviance(house_ph)
 
 
 
-    3484.0531705626913
+    3484.0531705626904
 
 
 
-From the deviances, we see the proportional odds model (logit link) has the best fit among all three models.
+From the deviances, we see that the proportional odds model (logit link) has the best fit among all three models.
 
 
 ```julia
@@ -271,7 +267,7 @@ deviance(house_po), deviance(house_op), deviance(house_ph)
 
 
 
-    (3479.149299072586, 3479.6888425652414, 3484.0531705626913)
+    (3479.149299072586, 3479.6888425652414, 3484.0531705626904)
 
 
 
@@ -295,7 +291,8 @@ Use Ipopt (interior-point) solver
 
 
 ```julia
-polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), IpoptSolver(print_level=3); wts = housing[:Freq])
+polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), 
+    IpoptSolver(print_level=3); wts = housing[:Freq])
 ```
 
     
@@ -320,10 +317,10 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), IpoptSolver(p
     
                                        (scaled)                 (unscaled)
     Objective...............:   2.0594068522767617e+02    1.7395746495294738e+03
-    Dual infeasibility......:   8.1478478823959181e-09    6.8824621073629131e-08
+    Dual infeasibility......:   8.1478360269928591e-09    6.8824520931403241e-08
     Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
     Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
-    Overall NLP error.......:   8.1478478823959181e-09    6.8824621073629131e-08
+    Overall NLP error.......:   8.1478360269928591e-09    6.8824520931403241e-08
     
     
     Number of objective function evaluations             = 91
@@ -333,8 +330,8 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), IpoptSolver(p
     Number of equality constraint Jacobian evaluations   = 0
     Number of inequality constraint Jacobian evaluations = 0
     Number of Lagrangian Hessian evaluations             = 0
-    Total CPU secs in IPOPT (w/o function evaluations)   =      0.057
-    Total CPU secs in NLP function evaluations           =      0.005
+    Total CPU secs in IPOPT (w/o function evaluations)   =      0.069
+    Total CPU secs in NLP function evaluations           =      0.006
     
     EXIT: Optimal Solution Found.
 
@@ -348,14 +345,14 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), IpoptSolver(p
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496135  0.124847 -3.97394   0.0002
-    θ2    0.690708  0.125472  5.50488    <1e-6
-    β1    0.566394  0.104653  5.41212    <1e-6
-    β2     1.28882  0.127156  10.1357   <1e-14
-    β3    -0.57235  0.119238 -4.80006    <1e-5
-    β4   -0.366186  0.155173 -2.35985   0.0213
-    β5    -1.09101  0.151486 -7.20208    <1e-9
-    β6    0.360284 0.0955358  3.77119   0.0004
+    θ1   -0.496135  0.124541 -3.98372   0.0002
+    θ2    0.690708  0.125212   5.5163    <1e-6
+    β1    0.566394  0.104963  5.39613    <1e-5
+    β2     1.28882  0.126705  10.1718   <1e-14
+    β3    -0.57235  0.118747  -4.8199    <1e-5
+    β4   -0.366186  0.156766 -2.33588   0.0226
+    β5    -1.09101  0.151514 -7.20077    <1e-9
+    β6    0.360284 0.0953575  3.77825   0.0003
 
 
 
@@ -364,7 +361,8 @@ Use SLSQP (sequential quadratic programming) in NLopt.jl package
 
 
 ```julia
-polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), NLoptSolver(algorithm=:LD_SLSQP); wts = housing[:Freq])
+polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), 
+    NLoptSolver(algorithm=:LD_SLSQP); wts = housing[:Freq])
 ```
 
 
@@ -376,14 +374,14 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), NLoptSolver(a
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496141  0.124847 -3.97398   0.0002
-    θ2    0.690706  0.125472  5.50486    <1e-6
-    β1    0.566392  0.104653   5.4121    <1e-6
-    β2     1.28881  0.127156  10.1357   <1e-14
-    β3   -0.572352  0.119238 -4.80008    <1e-5
-    β4   -0.366182  0.155173 -2.35983   0.0213
-    β5    -1.09101  0.151486 -7.20206    <1e-9
-    β6    0.360284 0.0955358   3.7712   0.0004
+    θ1   -0.496141  0.124541 -3.98376   0.0002
+    θ2    0.690706  0.125212  5.51628    <1e-6
+    β1    0.566392  0.104963  5.39611    <1e-5
+    β2     1.28881  0.126705  10.1718   <1e-14
+    β3   -0.572352  0.118747 -4.81991    <1e-5
+    β4   -0.366182  0.156766 -2.33586   0.0226
+    β5    -1.09101  0.151514 -7.20075    <1e-9
+    β6    0.360284 0.0953574  3.77825   0.0003
 
 
 
@@ -392,7 +390,8 @@ Use LBFGS (quasi-Newton algorithm) in NLopt.jl package
 
 
 ```julia
-polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), NLoptSolver(algorithm=:LD_LBFGS); wts = housing[:Freq])
+polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), 
+    NLoptSolver(algorithm=:LD_LBFGS); wts = housing[:Freq])
 ```
 
 
@@ -404,14 +403,14 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), NLoptSolver(a
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496111  0.124847 -3.97375   0.0002
-    θ2    0.690732  0.125472  5.50507    <1e-6
-    β1    0.566394  0.104653  5.41212    <1e-6
-    β2     1.28882  0.127156  10.1357   <1e-14
-    β3   -0.572352  0.119238 -4.80008    <1e-5
-    β4    -0.36616  0.155173 -2.35968   0.0214
-    β5    -1.09102  0.151486 -7.20212    <1e-9
-    β6    0.360319 0.0955359  3.77156   0.0004
+    θ1   -0.496111  0.124541 -3.98353   0.0002
+    θ2    0.690732  0.125212  5.51649    <1e-6
+    β1    0.566394  0.104963  5.39613    <1e-5
+    β2     1.28882  0.126705  10.1718   <1e-14
+    β3   -0.572352  0.118747 -4.81991    <1e-5
+    β4    -0.36616  0.156766 -2.33571   0.0227
+    β5    -1.09102  0.151514  -7.2008    <1e-9
+    β6    0.360319 0.0953575  3.77861   0.0003
 
 
 
@@ -436,13 +435,13 @@ house_null = polr(@formula(Sat ~ 0 + Infl + Type), housing; wts = housing[:Freq]
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.672949  0.115689  -5.8169    <1e-6
-    θ2    0.505629  0.115203  4.38903    <1e-4
-    β1    0.548392  0.104308  5.25743    <1e-5
-    β2      1.2373  0.125978  9.82155   <1e-13
-    β3   -0.521441  0.118215 -4.41094    <1e-4
-    β4   -0.289347  0.153387 -1.88639   0.0637
-    β5    -1.01404  0.149562 -6.78008    <1e-8
+    θ1   -0.672949  0.115559 -5.82341    <1e-6
+    θ2    0.505629  0.115147  4.39116    <1e-4
+    β1    0.548392  0.104613  5.24213    <1e-5
+    β2      1.2373  0.125448  9.86306   <1e-13
+    β3   -0.521441  0.117616 -4.43341    <1e-4
+    β4   -0.289347  0.155074 -1.86587   0.0666
+    β5    -1.01404   0.14976  -6.7711    <1e-8
 
 
 
@@ -484,13 +483,13 @@ house_null = polr(@formula(Sat ~ 0 + Infl + Type), housing; wts = housing[:Freq]
     
     Coefficients:
           Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.672949  0.115689  -5.8169    <1e-6
-    θ2    0.505629  0.115203  4.38903    <1e-4
-    β1    0.548392  0.104308  5.25743    <1e-5
-    β2      1.2373  0.125978  9.82155   <1e-13
-    β3   -0.521441  0.118215 -4.41094    <1e-4
-    β4   -0.289347  0.153387 -1.88639   0.0637
-    β5    -1.01404  0.149562 -6.78008    <1e-8
+    θ1   -0.672949  0.115559 -5.82341    <1e-6
+    θ2    0.505629  0.115147  4.39116    <1e-4
+    β1    0.548392  0.104613  5.24213    <1e-5
+    β2      1.2373  0.125448  9.86306   <1e-13
+    β3   -0.521441  0.117616 -4.43341    <1e-4
+    β4   -0.289347  0.155074 -1.86587   0.0666
+    β5    -1.01404   0.14976  -6.7711    <1e-8
 
 
 
@@ -508,7 +507,7 @@ polrtest(house_null, cont; test=:score)
 
 
 
-    0.00015872510523744706
+    0.0001648743597587817
 
 
 
@@ -525,7 +524,7 @@ polrtest(house_null, z1)
 
 
 
-    0.33703682134036256
+    0.15924574064469596
 
 
 
@@ -540,6 +539,6 @@ polrtest(house_null, z3)
 
 
 
-    1.585206970323263e-14
+    4.854704864623768e-24
 
 

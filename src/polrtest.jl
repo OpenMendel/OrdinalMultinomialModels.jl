@@ -82,12 +82,10 @@ function polrtest(d::PolrScoreTest)
     copyto!(d.nm.scratchm1, d.nm.X)
     lmul!(Diagonal(d.nm.wtwk), d.nm.scratchm1)
     @views mul!(d.∂γ∂θβ[:, d.nm.J:end], transpose(d.Z), d.nm.scratchm1)
-    d.∂γ∂θβ .*= -1
     # compute Q = ∂γ∂γ
     copyto!(d.scratchm1, d.Z)
     lmul!(Diagonal(d.nm.wtwk), d.scratchm1)
     mul!(d.∂γ∂γ, transpose(d.Z), d.scratchm1)
-    d.∂γ∂γ .*= -1
     # compute scratchm3 = Q - W' P^{-1} W
     mul!(d.scratchm2, d.∂γ∂θβ, d.nm.vcov)
     mul!(d.scratchm3, d.scratchm2, transpose(d.∂γ∂θβ))
