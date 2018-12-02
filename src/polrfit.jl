@@ -5,17 +5,16 @@ Evaluate the log-likelihood and optionally gradient and Hessian of
 ordered multinomial model.
 
 # Positional arguments
-
 - `m::PolrModel`: a `PolrModel` type. Log-likelihood is evaluated based on
 fields `Y`, `X`, `α`, `β`, and `link` of `m`.  
 - `needgrad::Bool=false`: evaluate gradient or not.  
-- `needhess::Bool=false`: evaluate Hessian or not.
+- `needhess::Bool=false`: evaluate Fisher information matrix (FIM) (negative Hessian) or not.
 
 # Output
-
 - `logl`: log-likelihood. If `needgrad=true`, field `m.∇` is overwritten by the
-gradient (score) with respect to `(θ, β)`. If `needhess=true`, field `m.H` is
-overwritten by the Hessian with respect to `(θ, β)`.
+gradient (score) with respect to `(θ, β)`. If `needhess=true`, field `m.FIM` is
+overwritten by the Fisher information matrix (FIM), equivalent to negative Hessian, 
+with respect to `(θ, β)`.
 """
 function polrfun!(
     m::PolrModel,
@@ -95,15 +94,13 @@ function polrfun!(
             derivjp1   = j == m.J-1 ? zero(T) : GLM.mueta(m.link, ηjp1)
             # FIM for ∂θ^2
             m.FIM[j, j] += wtobs * (pjinv + pjp1inv) * derivj * derivj
-            if j > 1
-                m.FIM[j, j-1] -= wtobs * pjinv * derivj * derivjm1
-            end
+            j > 1 && (m.FIM[j, j-1] -= wtobs * pjinv * derivj * derivjm1)
             # FIM for ∂θ∂β, weights only
             m.wt∂θ∂β[obs, j] += (pjinv * derivjm1 - (pjinv + pjp1inv) * derivj +
                 pjp1inv * derivjp1) * derivj
             # FIM for ∂β∂β, weights only
             m.wt∂β∂β[obs] += pjinv * (derivj - derivjm1)^2
-            j == m.J - 1 &&  (m.wt∂β∂β[obs] += pjp1inv * derivj * derivj) # p_iJ
+            j == m.J - 1 &&  (m.wt∂β∂β[obs] += pjp1inv * derivj * derivj) # contribution from p_iJ
         end
     end
     if needgrad
@@ -145,7 +142,6 @@ end
 Fit ordered multinomial model by maximum likelihood estimation.
 
 # Positional arguments
-
 - `formula::Formula`: a model formula specifying responses and regressors.
 - `df::DataFrame`: a dataframe. Response variable should take integer values 
     starting from 1.
@@ -155,13 +151,15 @@ Fit ordered multinomial model by maximum likelihood estimation.
 - `solver`: `NLoptSolver()` (default) or `IpoptSolver()`.
 
 # Keyword arguments
-
 - `wts::AbstractVector=similar(X, 0)`: observation weights.
 
 # Output
 - `dd:PolrModel`: a `PolrModel` type.
 """
-polr(X, y, args...; kwargs...) = fit(AbstractPolrModel, X, y, args...; kwargs...)
+polr(X::AbstractMatrix, y::AbstractVector, args...; kwargs...) = 
+    fit(AbstractPolrModel, X, y, args...; kwargs...)
+polr(f::Formula, df, args...; kwargs...) = 
+    fit(AbstractPolrModel, f, df, args...; kwargs...)
 
 """
     fit(AbstractPolrModel, X, y, link, solver)
@@ -185,8 +183,8 @@ function fit(
     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
     wts::AbstractVector = similar(X, 0)
     ) where M <: AbstractPolrModel
-    
-    ydata = denserank(y)
+    # set up optimization
+    ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
     dd = PolrModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
     m = MathProgBase.NonlinearModel(solver)
     lb = fill(-Inf, dd.npar)
@@ -197,7 +195,6 @@ function fit(
     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
     MathProgBase.setwarmstart!(m, par0)
     MathProgBase.optimize!(m)
-    
     # ouput
     stat = MathProgBase.status(m)
     stat == :Optimal || @warn("Optimization unsuccesful; got $stat")

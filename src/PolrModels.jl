@@ -3,7 +3,7 @@ __precompile__()
 module PolrModels
 
 using LinearAlgebra
-using Distributions, Reexport
+using Distributions, Reexport, StatsModels
 @reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
@@ -11,6 +11,7 @@ using Distributions, Reexport
 using MathProgBase
 import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
 response, score, stderror, weights
+import StatsModels: drop_intercept
 import LinearAlgebra: BlasReal
 
 export
@@ -27,6 +28,7 @@ export
     deviance,
     dof,
     dof_residual,
+    drop_intercept,
     loglikelihood,
     modelmatrix,
     nobs,
@@ -44,6 +46,7 @@ export
     weights
 
 abstract type AbstractPolrModel <: RegressionModel end
+drop_intercept(::Type{AbstractPolrModel}) = true
 
 """
     PolrModel

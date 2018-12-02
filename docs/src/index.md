@@ -81,7 +81,7 @@ To fit an ordered multinomial model using default link `link=LogitLink()`, i.e.,
 
 
 ```julia
-house_po = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, 
+house_po = polr(@formula(Sat ~ Infl + Type + Cont), housing, 
     wts = housing[:Freq])
 ```
 
@@ -106,12 +106,7 @@ house_po = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
 
 
 
-!!! note
-
-    It is necessary to **exclude intercept** in formula because ordered multinomial model automatically includes intercept for proper modeling.
-
-
-Since there are $J=3$ categories in `Sat`, the fitted model has 2 intercept parameters $\theta_1$ and $\theta_2$ that satisfy $\theta_1 \le \theta_2$. $\beta_1, \beta_2$ are  regression coefficients for `Infl` (3 levels), $\beta_3, \beta_4, \beta_5$ for `Type` (4 levels), and $\beta_6$ for `Cont` (2 levels). 
+Since there are $J=3$ categories in `Sat`, the fitted model has 2 intercept parameters $\theta_1$ and $\theta_2$ that satisfy $\theta_1 \le \theta_2$. $\beta_1, \beta_2$ are regression coefficients for `Infl` (3 levels), $\beta_3, \beta_4, \beta_5$ for `Type` (4 levels), and $\beta_6$ for `Cont` (2 levels). 
 
 Deviance (-2 loglikelihood) of the fitted model is
 
@@ -177,7 +172,7 @@ To fit an ordered probit model, we use link `ProbitLink()`
 
 
 ```julia
-house_op = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, ProbitLink(), 
+house_op = polr(@formula(Sat ~ Infl + Type + Cont), housing, ProbitLink(), 
     wts = housing[:Freq])
 ```
 
@@ -220,7 +215,7 @@ To fit a proportional hazards model, we use `CloglogLink()`
 
 
 ```julia
-house_ph = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, CloglogLink(), 
+house_ph = polr(@formula(Sat ~ Infl + Type + Cont), housing, CloglogLink(), 
     wts = housing[:Freq])
 ```
 
@@ -291,7 +286,7 @@ Use Ipopt (interior-point) solver
 
 
 ```julia
-polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), 
+polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(), 
     IpoptSolver(print_level=3); wts = housing[:Freq])
 ```
 
@@ -331,7 +326,7 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(),
     Number of inequality constraint Jacobian evaluations = 0
     Number of Lagrangian Hessian evaluations             = 0
     Total CPU secs in IPOPT (w/o function evaluations)   =      0.069
-    Total CPU secs in NLP function evaluations           =      0.006
+    Total CPU secs in NLP function evaluations           =      0.007
     
     EXIT: Optimal Solution Found.
 
@@ -361,7 +356,7 @@ Use SLSQP (sequential quadratic programming) in NLopt.jl package
 
 
 ```julia
-polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), 
+polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(), 
     NLoptSolver(algorithm=:LD_SLSQP); wts = housing[:Freq])
 ```
 
@@ -423,7 +418,7 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(),
 
 
 ```julia
-house_null = polr(@formula(Sat ~ 0 + Infl + Type), housing; wts = housing[:Freq])
+house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])
 ```
 
 
@@ -471,7 +466,7 @@ User can perform **score test** using the `polrtest` function too. Score test ha
 
 
 ```julia
-house_null = polr(@formula(Sat ~ 0 + Infl + Type), housing; wts = housing[:Freq])
+house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])
 ```
 
 
@@ -524,7 +519,7 @@ polrtest(house_null, z1)
 
 
 
-    0.15924574064469596
+    0.6710720175180452
 
 
 
@@ -539,6 +534,6 @@ polrtest(house_null, z3)
 
 
 
-    4.854704864623768e-24
+    5.1115768869974997e-14
 
 

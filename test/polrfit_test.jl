@@ -7,7 +7,7 @@ housing = dataset("MASS", "housing")
 
 @testset "logit link" begin
     for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
-        houseplr = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
+        houseplr = polr(@formula(Sat ~ Infl + Type + Cont), housing,
             LogitLink(), solver; wts = housing[:Freq])
         @test nobs(houseplr) == 72
         @test isapprox(deviance(houseplr), 3479.149; rtol=1e-4)
@@ -18,7 +18,7 @@ end
 
 @testset "probit link" begin
     for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
-        houseplr = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
+        houseplr = polr(@formula(Sat ~ Infl + Type + Cont), housing,
             ProbitLink(), solver; wts = housing[:Freq])
         @test nobs(houseplr) == 72
         @test isapprox(deviance(houseplr), 3479.689; rtol=1e-4)
@@ -29,7 +29,7 @@ end
 
 @testset "cloglog link" begin
     for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
-        houseplr = polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing,
+        houseplr = polr(@formula(Sat ~ Infl + Type + Cont), housing,
             CloglogLink(), solver; wts = housing[:Freq])
         @test nobs(houseplr) == 72
         @test isapprox(deviance(houseplr), 3484.053; rtol=1e-4)
@@ -37,6 +37,5 @@ end
         @test isapprox(stderror(houseplr), [0.0904734, 0.0866657, 0.0701218, 0.0924964, 0.0861325, 0.112948, 0.102084, 0.0653755]; rtol=1e-4)
     end
 end
-
 
 end
