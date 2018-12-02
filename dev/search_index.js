@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "PolrModels.jl",
     "title": "Installation",
     "category": "section",
-    "text": "This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the ] key to switch to the package manager REPL(v1.0) pkg> add https://github.com/OpenMendel/PolrModels.git# Machine info for results in this tutorial\nversioninfo()Julia Version 1.0.2\nCommit d789231e99 (2018-11-08 20:11 UTC)\nPlatform Info:\n  OS: macOS (x86_64-apple-darwin14.5.0)\n  CPU: Intel(R) Core(TM) i7-6920HQ CPU @ 2.90GHz\n  WORD_SIZE: 64\n  LIBM: libopenlibm\n  LLVM: libLLVM-6.0.0 (ORCJIT, skylake)\nEnvironment:\n  JULIA_EDITOR = code# for use in this tutorial\nusing PolrModels, BenchmarkTools"
+    "text": "This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the ] key to switch to the package manager REPL(v1.0) pkg> add https://github.com/OpenMendel/PolrModels.jl.git# Machine info for results in this tutorial\nversioninfo()Julia Version 1.0.2\nCommit d789231e99 (2018-11-08 20:11 UTC)\nPlatform Info:\n  OS: macOS (x86_64-apple-darwin14.5.0)\n  CPU: Intel(R) Core(TM) i7-6920HQ CPU @ 2.90GHz\n  WORD_SIZE: 64\n  LIBM: libopenlibm\n  LLVM: libLLVM-6.0.0 (ORCJIT, skylake)\nEnvironment:\n  JULIA_EDITOR = code# for use in this tutorial\nusing PolrModels, BenchmarkTools"
 },
 
 {
