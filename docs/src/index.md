@@ -7,7 +7,7 @@ PolrModels.jl provides Julia utilities to fit ordered multinomial models, includ
 
 This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the `]` key to switch to the package manager REPL
 ```julia
-(v0.7) pkg> add https://github.com/OpenMendel/PolrModels.git
+(v1.0) pkg> add https://github.com/OpenMendel/PolrModels.git
 ```
 
 
@@ -16,8 +16,8 @@ This package requires Julia v0.7 or later. The package has not yet been register
 versioninfo()
 ```
 
-    Julia Version 0.7.0
-    Commit a4cb80f3ed (2018-08-08 06:46 UTC)
+    Julia Version 1.0.2
+    Commit d789231e99 (2018-11-08 20:11 UTC)
     Platform Info:
       OS: macOS (x86_64-apple-darwin14.5.0)
       CPU: Intel(R) Core(TM) i7-6920HQ CPU @ 2.90GHz
@@ -81,8 +81,7 @@ To fit an ordered multinomial model using default link `link=LogitLink()`, i.e.,
 
 
 ```julia
-house_po = polr(@formula(Sat ~ Infl + Type + Cont), housing, 
-    wts = housing[:Freq])
+house_po = polr(@formula(Sat ~ Infl + Type + Cont), housing, wts = housing[:Freq])
 ```
 
 
@@ -172,8 +171,7 @@ To fit an ordered probit model, we use link `ProbitLink()`
 
 
 ```julia
-house_op = polr(@formula(Sat ~ Infl + Type + Cont), housing, ProbitLink(), 
-    wts = housing[:Freq])
+house_op = polr(@formula(Sat ~ Infl + Type + Cont), housing, ProbitLink(), wts = housing[:Freq])
 ```
 
 
@@ -215,8 +213,7 @@ To fit a proportional hazards model, we use `CloglogLink()`
 
 
 ```julia
-house_ph = polr(@formula(Sat ~ Infl + Type + Cont), housing, CloglogLink(), 
-    wts = housing[:Freq])
+house_ph = polr(@formula(Sat ~ Infl + Type + Cont), housing, CloglogLink(), wts = housing[:Freq])
 ```
 
 
@@ -325,8 +322,8 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
     Number of equality constraint Jacobian evaluations   = 0
     Number of inequality constraint Jacobian evaluations = 0
     Number of Lagrangian Hessian evaluations             = 0
-    Total CPU secs in IPOPT (w/o function evaluations)   =      0.069
-    Total CPU secs in NLP function evaluations           =      0.007
+    Total CPU secs in IPOPT (w/o function evaluations)   =      0.054
+    Total CPU secs in NLP function evaluations           =      0.005
     
     EXIT: Optimal Solution Found.
 
@@ -519,7 +516,7 @@ polrtest(house_null, z1)
 
 
 
-    0.6710720175180452
+    0.022503650726667584
 
 
 
@@ -534,6 +531,6 @@ polrtest(house_null, z3)
 
 
 
-    5.1115768869974997e-14
+    1.117291961318975e-40
 
 
