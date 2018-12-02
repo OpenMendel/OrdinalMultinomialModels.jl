@@ -7,7 +7,7 @@ PolrModels.jl provides Julia utilities to fit ordered multinomial models, includ
 
 This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the `]` key to switch to the package manager REPL
 ```julia
-(v1.0) pkg> add https://github.com/OpenMendel/PolrModels.git
+(v1.0) pkg> add https://github.com/OpenMendel/PolrModels.jl.git
 ```
 
 
