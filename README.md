@@ -1,4 +1,4 @@
-# PolrModels
+# OrdinalMultinomialModels
 
 | **Documentation** | **Build Status** | **Code Coverage**  |
 |-------------------|------------------|--------------------|
