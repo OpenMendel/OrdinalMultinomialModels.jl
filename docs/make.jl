@@ -5,7 +5,7 @@ ENV["DOCUMENTER_DEBUG"] = "true"
 makedocs(
     format = :html,
     sitename = "OrdinalMultinomialModels",
-    modules = [PolrModels]
+    modules = [OrdinalMultinomialModels]
 )
 
 deploydocs(
