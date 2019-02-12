@@ -8,8 +8,7 @@
 OrdinalMultinomialModels.jl provides Julia utilities to fit ordered multinomial models, including [proportional odds model](https://en.wikipedia.org/wiki/Ordered_logit) and [ordered Probit model](https://en.wikipedia.org/wiki/Ordered_probit) as special cases. 
 
 OrdinalMultinomialModels.jl supports Julia v0.7 and later. See documentation for installation and usage.  
-![](https://img.shields.io/badge/docs-stable-blue.svg)](https://OpenMendel.github.io/OrdinalMultinomialModels.jl/stable)
-[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://OpenMendel.github.io/OrdinalMultinomialModels.jl/latest)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://OpenMendel.github.io/OrdinalMultinomialModels.jl/stable) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://OpenMendel.github.io/OrdinalMultinomialModels.jl/latest)
 
 
 ## Citation
