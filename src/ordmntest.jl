@@ -1,27 +1,27 @@
-function polrtest(nm::PolrModel, Z::AbstractVecOrMat; test=:score)
+function polrtest(nm::OrdinalMultinomialModel, Z::AbstractVecOrMat; test=:score)
     if test == :score
-        polrtest(PolrScoreTest(nm, reshape(Z, size(Z, 1), size(Z, 2))))
+        polrtest(OrdinalMultinomialScoreTest(nm, reshape(Z, size(Z, 1), size(Z, 2))))
     elseif test == :LRT
-        polrtest(PolrLrtTest(nm, reshape(Z, size(Z, 1), size(Z, 2))))
+        polrtest(OrdinalMultinomialLrtTest(nm, reshape(Z, size(Z, 1), size(Z, 2))))
     else
         throw(ArgumentError("unrecognized test $test"))
     end
 end
 
-polrtest(nm::StatsModels.DataFrameRegressionModel{<:PolrModel}, Z::AbstractVecOrMat; kwargs...) = 
+polrtest(nm::StatsModels.DataFrameRegressionModel{<:OrdinalMultinomialModel}, Z::AbstractVecOrMat; kwargs...) = 
 polrtest(nm.model, Z; kwargs...)
 
 ###########################
 # Score test
 ###########################
 
-struct PolrScoreTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
+struct OrdinalMultinomialScoreTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
     "`q`: number of covariates to test significance"
     q::Int
     "`Z`: n-by-q covariate matrix to test significance"
     Z::Matrix{T}
     "`nm`: fitted null model"
-    nm::PolrModel{TY,T,TL}
+    nm::OrdinalMultinomialModel{TY,T,TL}
     "`scoreγ`: score vector of γ"
     scoreγ::Vector{T}
     "`∂γ∂θβ`: information of γ vs (θ,β)"
@@ -38,7 +38,7 @@ struct PolrScoreTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
     scratchm3::Matrix{T}
 end
 
-function PolrScoreTest(nm::PolrModel, Z::Matrix)
+function OrdinalMultinomialScoreTest(nm::OrdinalMultinomialModel, Z::Matrix)
     TY, T, TL = eltype(nm.Y), eltype(nm.X), typeof(nm.link)
     q = size(Z, 2)
     scoreγ = zeros(T, q)
@@ -48,11 +48,11 @@ function PolrScoreTest(nm::PolrModel, Z::Matrix)
     scratchm1 = similar(Z)
     scratchm2 = similar(∂γ∂θβ)
     scratchm3 = similar(∂γ∂γ)
-    PolrScoreTest{TY, T, TL}(q, Z, nm, scoreγ, ∂γ∂θβ, ∂γ∂γ, scratchv1, scratchm1, scratchm2, scratchm3)
+    OrdinalMultinomialScoreTest{TY, T, TL}(q, Z, nm, scoreγ, ∂γ∂θβ, ∂γ∂γ, scratchv1, scratchm1, scratchm2, scratchm3)
 end
 
 
-function polrtest(d::PolrScoreTest)
+function polrtest(d::OrdinalMultinomialScoreTest)
     #
     # partition the informatrix matrix as
     # [P  W]
@@ -107,28 +107,28 @@ end
 # LRT test
 ###########################
 
-struct PolrLrtTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
+struct OrdinalMultinomialLrtTest{TY<:Integer, T<:BlasReal, TL<:GLM.Link}
     "`q`: number of covariates to test significance"
     q::Int
     "`Z`: n-by-q covariate matrix to test significance"
     Z::Matrix{T}
     "`nm`: fitted null model"
-    nm::PolrModel{TY,T,TL}
+    nm::OrdinalMultinomialModel{TY,T,TL}
     "`Xaug`: augmented X matrix for full model"
     Xaug::Matrix{T}
 end
 
-function PolrLrtTest(nm::PolrModel, Z::AbstractVecOrMat)
+function OrdinalMultinomialLrtTest(nm::OrdinalMultinomialModel, Z::AbstractVecOrMat)
     TY, T, TL = eltype(nm.Y), eltype(nm.X), typeof(nm.link)
     q = size(Z, 2)
     Xaug = Matrix{T}(undef, nm.n, nm.p + q)
     @views copyto!(Xaug[:, 1:nm.p], nm.X)
     @views copyto!(Xaug[:, nm.p+1:end], Z)
-    PolrLrtTest{TY, T, TL}(q, Z, nm, Xaug)
+    OrdinalMultinomialLrtTest{TY, T, TL}(q, Z, nm, Xaug)
 end
 
 function polrtest(
-    d::PolrLrtTest; 
+    d::OrdinalMultinomialLrtTest; 
     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
     am = polr(d.Xaug, d.nm.Y, d.nm.link, solver; wts = d.nm.wts)
     ccdf(Chisq(d.q), deviance(d.nm) - deviance(am))

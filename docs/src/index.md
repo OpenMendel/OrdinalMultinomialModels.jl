@@ -1,13 +1,13 @@
 
-# PolrModels.jl
+# OrdinalMultinomialModels.jl
 
-PolrModels.jl provides Julia utilities to fit ordered multinomial models, including [proportional odds model](https://en.wikipedia.org/wiki/Ordered_logit) and [ordered Probit model](https://en.wikipedia.org/wiki/Ordered_probit) as special cases. 
+OrdinalMultinomialModels.jl provides Julia utilities to fit ordered multinomial models, including [proportional odds model](https://en.wikipedia.org/wiki/Ordered_logit) and [ordered Probit model](https://en.wikipedia.org/wiki/Ordered_probit) as special cases. 
 
 ## Installation
 
 This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the `]` key to switch to the package manager REPL
 ```julia
-(v1.0) pkg> add https://github.com/OpenMendel/PolrModels.jl.git
+(v1.0) pkg> add https://github.com/OpenMendel/OrdinalMultinomialModels.jl.git
 ```
 
 
@@ -16,8 +16,8 @@ This package requires Julia v0.7 or later. The package has not yet been register
 versioninfo()
 ```
 
-    Julia Version 1.0.2
-    Commit d789231e99 (2018-11-08 20:11 UTC)
+    Julia Version 1.0.3
+    Commit 099e826241 (2018-12-18 01:34 UTC)
     Platform Info:
       OS: macOS (x86_64-apple-darwin14.5.0)
       CPU: Intel(R) Core(TM) i7-6920HQ CPU @ 2.90GHz
@@ -31,7 +31,7 @@ versioninfo()
 
 ```julia
 # for use in this tutorial
-using PolrModels, BenchmarkTools
+using OrdinalMultinomialModels, BenchmarkTools
 ```
 
 ## Example data
@@ -48,7 +48,7 @@ housing = dataset("MASS", "housing")
 
 
 
-<table class="data-frame"><thead><tr><th></th><th>Sat</th><th>Infl</th><th>Type</th><th>Cont</th><th>Freq</th></tr><tr><th></th><th>Categorical…</th><th>Categorical…</th><th>Categorical…</th><th>Categorical…</th><th>Int32</th></tr></thead><tbody><tr><th>1</th><td>Low</td><td>Low</td><td>Tower</td><td>Low</td><td>21</td></tr><tr><th>2</th><td>Medium</td><td>Low</td><td>Tower</td><td>Low</td><td>21</td></tr><tr><th>3</th><td>High</td><td>Low</td><td>Tower</td><td>Low</td><td>28</td></tr><tr><th>4</th><td>Low</td><td>Medium</td><td>Tower</td><td>Low</td><td>34</td></tr><tr><th>5</th><td>Medium</td><td>Medium</td><td>Tower</td><td>Low</td><td>22</td></tr><tr><th>6</th><td>High</td><td>Medium</td><td>Tower</td><td>Low</td><td>36</td></tr><tr><th>7</th><td>Low</td><td>High</td><td>Tower</td><td>Low</td><td>10</td></tr><tr><th>8</th><td>Medium</td><td>High</td><td>Tower</td><td>Low</td><td>11</td></tr><tr><th>9</th><td>High</td><td>High</td><td>Tower</td><td>Low</td><td>36</td></tr><tr><th>10</th><td>Low</td><td>Low</td><td>Apartment</td><td>Low</td><td>61</td></tr><tr><th>11</th><td>Medium</td><td>Low</td><td>Apartment</td><td>Low</td><td>23</td></tr><tr><th>12</th><td>High</td><td>Low</td><td>Apartment</td><td>Low</td><td>17</td></tr><tr><th>13</th><td>Low</td><td>Medium</td><td>Apartment</td><td>Low</td><td>43</td></tr><tr><th>14</th><td>Medium</td><td>Medium</td><td>Apartment</td><td>Low</td><td>35</td></tr><tr><th>15</th><td>High</td><td>Medium</td><td>Apartment</td><td>Low</td><td>40</td></tr><tr><th>16</th><td>Low</td><td>High</td><td>Apartment</td><td>Low</td><td>26</td></tr><tr><th>17</th><td>Medium</td><td>High</td><td>Apartment</td><td>Low</td><td>18</td></tr><tr><th>18</th><td>High</td><td>High</td><td>Apartment</td><td>Low</td><td>54</td></tr><tr><th>19</th><td>Low</td><td>Low</td><td>Atrium</td><td>Low</td><td>13</td></tr><tr><th>20</th><td>Medium</td><td>Low</td><td>Atrium</td><td>Low</td><td>9</td></tr><tr><th>21</th><td>High</td><td>Low</td><td>Atrium</td><td>Low</td><td>10</td></tr><tr><th>22</th><td>Low</td><td>Medium</td><td>Atrium</td><td>Low</td><td>8</td></tr><tr><th>23</th><td>Medium</td><td>Medium</td><td>Atrium</td><td>Low</td><td>8</td></tr><tr><th>24</th><td>High</td><td>Medium</td><td>Atrium</td><td>Low</td><td>12</td></tr><tr><th>25</th><td>Low</td><td>High</td><td>Atrium</td><td>Low</td><td>6</td></tr><tr><th>26</th><td>Medium</td><td>High</td><td>Atrium</td><td>Low</td><td>7</td></tr><tr><th>27</th><td>High</td><td>High</td><td>Atrium</td><td>Low</td><td>9</td></tr><tr><th>28</th><td>Low</td><td>Low</td><td>Terrace</td><td>Low</td><td>18</td></tr><tr><th>29</th><td>Medium</td><td>Low</td><td>Terrace</td><td>Low</td><td>6</td></tr><tr><th>30</th><td>High</td><td>Low</td><td>Terrace</td><td>Low</td><td>7</td></tr><tr><th>&vellip;</th><td>&vellip;</td><td>&vellip;</td><td>&vellip;</td><td>&vellip;</td><td>&vellip;</td></tr></tbody></table>
+<table class="data-frame"><thead><tr><th></th><th>Sat</th><th>Infl</th><th>Type</th><th>Cont</th><th>Freq</th></tr><tr><th></th><th>Categorical…</th><th>Categorical…</th><th>Categorical…</th><th>Categorical…</th><th>Int32</th></tr></thead><tbody><p>72 rows × 5 columns</p><tr><th>1</th><td>Low</td><td>Low</td><td>Tower</td><td>Low</td><td>21</td></tr><tr><th>2</th><td>Medium</td><td>Low</td><td>Tower</td><td>Low</td><td>21</td></tr><tr><th>3</th><td>High</td><td>Low</td><td>Tower</td><td>Low</td><td>28</td></tr><tr><th>4</th><td>Low</td><td>Medium</td><td>Tower</td><td>Low</td><td>34</td></tr><tr><th>5</th><td>Medium</td><td>Medium</td><td>Tower</td><td>Low</td><td>22</td></tr><tr><th>6</th><td>High</td><td>Medium</td><td>Tower</td><td>Low</td><td>36</td></tr><tr><th>7</th><td>Low</td><td>High</td><td>Tower</td><td>Low</td><td>10</td></tr><tr><th>8</th><td>Medium</td><td>High</td><td>Tower</td><td>Low</td><td>11</td></tr><tr><th>9</th><td>High</td><td>High</td><td>Tower</td><td>Low</td><td>36</td></tr><tr><th>10</th><td>Low</td><td>Low</td><td>Apartment</td><td>Low</td><td>61</td></tr><tr><th>11</th><td>Medium</td><td>Low</td><td>Apartment</td><td>Low</td><td>23</td></tr><tr><th>12</th><td>High</td><td>Low</td><td>Apartment</td><td>Low</td><td>17</td></tr><tr><th>13</th><td>Low</td><td>Medium</td><td>Apartment</td><td>Low</td><td>43</td></tr><tr><th>14</th><td>Medium</td><td>Medium</td><td>Apartment</td><td>Low</td><td>35</td></tr><tr><th>15</th><td>High</td><td>Medium</td><td>Apartment</td><td>Low</td><td>40</td></tr><tr><th>16</th><td>Low</td><td>High</td><td>Apartment</td><td>Low</td><td>26</td></tr><tr><th>17</th><td>Medium</td><td>High</td><td>Apartment</td><td>Low</td><td>18</td></tr><tr><th>18</th><td>High</td><td>High</td><td>Apartment</td><td>Low</td><td>54</td></tr><tr><th>19</th><td>Low</td><td>Low</td><td>Atrium</td><td>Low</td><td>13</td></tr><tr><th>20</th><td>Medium</td><td>Low</td><td>Atrium</td><td>Low</td><td>9</td></tr><tr><th>21</th><td>High</td><td>Low</td><td>Atrium</td><td>Low</td><td>10</td></tr><tr><th>22</th><td>Low</td><td>Medium</td><td>Atrium</td><td>Low</td><td>8</td></tr><tr><th>23</th><td>Medium</td><td>Medium</td><td>Atrium</td><td>Low</td><td>8</td></tr><tr><th>24</th><td>High</td><td>Medium</td><td>Atrium</td><td>Low</td><td>12</td></tr><tr><th>25</th><td>Low</td><td>High</td><td>Atrium</td><td>Low</td><td>6</td></tr><tr><th>26</th><td>Medium</td><td>High</td><td>Atrium</td><td>Low</td><td>7</td></tr><tr><th>27</th><td>High</td><td>High</td><td>Atrium</td><td>Low</td><td>9</td></tr><tr><th>28</th><td>Low</td><td>Low</td><td>Terrace</td><td>Low</td><td>18</td></tr><tr><th>29</th><td>Medium</td><td>Low</td><td>Terrace</td><td>Low</td><td>6</td></tr><tr><th>30</th><td>High</td><td>Low</td><td>Terrace</td><td>Low</td><td>7</td></tr><tr><th>&vellip;</th><td>&vellip;</td><td>&vellip;</td><td>&vellip;</td><td>&vellip;</td><td>&vellip;</td></tr></tbody></table>
 
 
 
@@ -87,7 +87,7 @@ house_po = polr(@formula(Sat ~ Infl + Type + Cont), housing, wts = housing[:Freq
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,LogitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type + Cont
     
@@ -177,7 +177,7 @@ house_op = polr(@formula(Sat ~ Infl + Type + Cont), housing, ProbitLink(), wts =
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,ProbitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,ProbitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type + Cont
     
@@ -219,7 +219,7 @@ house_ph = polr(@formula(Sat ~ Infl + Type + Cont), housing, CloglogLink(), wts 
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,CloglogLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,CloglogLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type + Cont
     
@@ -322,7 +322,7 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
     Number of equality constraint Jacobian evaluations   = 0
     Number of inequality constraint Jacobian evaluations = 0
     Number of Lagrangian Hessian evaluations             = 0
-    Total CPU secs in IPOPT (w/o function evaluations)   =      0.054
+    Total CPU secs in IPOPT (w/o function evaluations)   =      0.056
     Total CPU secs in NLP function evaluations           =      0.005
     
     EXIT: Optimal Solution Found.
@@ -331,7 +331,7 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,LogitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type + Cont
     
@@ -360,7 +360,7 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,LogitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type + Cont
     
@@ -389,7 +389,7 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(),
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,LogitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type + Cont
     
@@ -421,7 +421,7 @@ house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,LogitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type
     
@@ -469,7 +469,7 @@ house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])
 
 
 
-    StatsModels.DataFrameRegressionModel{PolrModel{Int64,Float64,LogitLink},Array{Float64,2}}
+    StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
     
     Formula: Sat ~ Infl + Type
     
@@ -516,7 +516,7 @@ polrtest(house_null, z1)
 
 
 
-    0.022503650726667584
+    2.1636960843690103e-8
 
 
 
@@ -531,6 +531,6 @@ polrtest(house_null, z3)
 
 
 
-    1.117291961318975e-40
+    6.604009932187192e-26
 
 

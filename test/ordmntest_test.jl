@@ -1,6 +1,6 @@
 module PolrtestTest
 
-using Test, PolrModels, Random
+using Test, OrdinalMultinomialModels, Random
 
 Random.seed!(123)
 

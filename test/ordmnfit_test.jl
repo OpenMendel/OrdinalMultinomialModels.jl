@@ -1,6 +1,6 @@
 module PolrfitTest
 
-using Test, PolrModels, RDatasets
+using Test, OrdinalMultinomialModels, RDatasets
 
 housing = dataset("MASS", "housing")
 @info "Housing example for `polr` function in R package MASS"

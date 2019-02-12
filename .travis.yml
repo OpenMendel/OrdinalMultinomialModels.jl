@@ -5,8 +5,8 @@ os:
   - linux
   - osx
 julia:
-  - 0.7
   - 1.0
+  - 1.1
   - nightly
 addons:
     apt_packages:
@@ -18,7 +18,7 @@ git:
 
 after_script:  # TODO: change to after_success once https://github.com/JuliaLang/julia/issues/28306 is fixed
   # push coverage results to Codecov and Coveralls
-  - julia -e 'using Pkg, PolrModels; cd(joinpath(dirname(pathof(PolrModels)), "..")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder()); Coveralls.submit(process_folder())'
+  - julia -e 'using Pkg, OrdinalMultinomialModels; cd(joinpath(dirname(pathof(OrdinalMultinomialModels)), "..")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder()); Coveralls.submit(process_folder())'
 
 jobs:
   include:
@@ -27,6 +27,7 @@ jobs:
       os: osx
       script:
         - julia -e 'using Pkg; Pkg.add("Documenter")'
-        - julia -e 'using PolrModels; include(joinpath(dirname(pathof(PolrModels)), "..", "docs", "make.jl"))'
+        - julia -e 'using OrdinalMultinomialModels; include(joinpath(dirname(pathof(OrdinalMultinomialModels)), "..", "docs", "make.jl"))'
       after_script: skip
       after_success: skip
+      

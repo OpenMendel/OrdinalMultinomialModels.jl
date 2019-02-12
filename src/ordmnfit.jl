@@ -1,5 +1,5 @@
 """
-    polrfun!(m, [needgrad=false], [needhess=false])
+    loglikelihood!(m, [needgrad=false], [needhess=false])
 
 Evaluate the log-likelihood and optionally gradient and Hessian of
 ordered multinomial model.
@@ -16,8 +16,8 @@ gradient (score) with respect to `(θ, β)`. If `needhess=true`, field `m.FIM` i
 overwritten by the Fisher information matrix (FIM), equivalent to negative Hessian, 
 with respect to `(θ, β)`.
 """
-function polrfun!(
-    m::PolrModel,
+function loglikelihood!(
+    m::OrdinalMultinomialModel,
     needgrad = false,
     needhess = false)
     
@@ -157,12 +157,12 @@ Fit ordered multinomial model by maximum likelihood estimation.
 - `dd:PolrModel`: a `PolrModel` type.
 """
 polr(X::AbstractMatrix, y::AbstractVector, args...; kwargs...) = 
-    fit(AbstractPolrModel, X, y, args...; kwargs...)
+    fit(AbstractOrdinalMultinomialModel, X, y, args...; kwargs...)
 polr(f::Formula, df, args...; kwargs...) = 
-    fit(AbstractPolrModel, f, df, args...; kwargs...)
+    fit(AbstractOrdinalMultinomialModel, f, df, args...; kwargs...)
 
 """
-    fit(AbstractPolrModel, X, y, link, solver)
+    fit(AbstractOrdinalMultinomialModel, X, y, link, solver)
 
 Fit ordered multinomial model by maximum likelihood estimation.
 
@@ -173,7 +173,7 @@ Fit ordered multinomial model by maximum likelihood estimation.
 - `solver`: `IpoptSolver()` or `NLoptSolver()`.
 
 # Output
-- `dd:PolrModel`: a `PolrModel` type.
+- `dd:OrdinalMultinomialModel`: an `OrdinalMultinomialModel` type.
 """
 function fit(
     ::Type{M},
@@ -182,10 +182,10 @@ function fit(
     link::GLM.Link = LogitLink(),
     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
     wts::AbstractVector = similar(X, 0)
-    ) where M <: AbstractPolrModel
+    ) where M <: AbstractOrdinalMultinomialModel
     # set up optimization
     ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
-    dd = PolrModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
+    dd = OrdinalMultinomialModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
     m = MathProgBase.NonlinearModel(solver)
     lb = fill(-Inf, dd.npar)
     ub = fill( Inf, dd.npar)
@@ -201,7 +201,7 @@ function fit(
     xsol = MathProgBase.getsolution(m)
     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
     copyto!(dd.β, 1, xsol, dd.J, dd.p)
-    polrfun!(dd, true, true)
+    loglikelihood!(dd, true, true)
     FIMbk = bunchkaufman(Symmetric(dd.FIM), check=false)
     if issuccess(FIMbk)
         dd.vcov[:] = inv(FIMbk)
@@ -211,7 +211,7 @@ function fit(
     return dd
 end
 
-function MathProgBase.initialize(m::PolrModel,
+function MathProgBase.initialize(m::OrdinalMultinomialModel,
     requested_features::Vector{Symbol})
     for feat in requested_features
         if !(feat in [:Grad])
@@ -220,18 +220,18 @@ function MathProgBase.initialize(m::PolrModel,
     end
 end
 
-MathProgBase.features_available(m::PolrModel) = [:Grad]
+MathProgBase.features_available(m::OrdinalMultinomialModel) = [:Grad]
 
-function MathProgBase.eval_f(m::PolrModel, par::Vector)
+function MathProgBase.eval_f(m::OrdinalMultinomialModel, par::Vector)
     copyto!(m.α, 1, par, 1, m.J - 1)
     copyto!(m.β, 1, par, m.J, m.p)
-    polrfun!(m, false, false)
+    loglikelihood!(m, false, false)
 end
 
-function MathProgBase.eval_grad_f(m::PolrModel, grad::Vector, par::Vector)
+function MathProgBase.eval_grad_f(m::OrdinalMultinomialModel, grad::Vector, par::Vector)
     copyto!(m.α, 1, par, 1, m.J - 1)
     copyto!(m.β, 1, par, m.J, m.p)
-    polrfun!(m, true, false)
+    loglikelihood!(m, true, false)
     @views mul!(grad[1:m.J-1], m.dθdα, m.∇[1:m.J-1])
     copyto!(grad, m.J, m.∇, m.J, m.p)
 end

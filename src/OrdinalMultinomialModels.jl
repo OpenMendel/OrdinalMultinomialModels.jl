@@ -1,6 +1,6 @@
 __precompile__()
 
-module PolrModels
+module OrdinalMultinomialModels
 
 using LinearAlgebra
 using Distributions, Reexport, StatsModels
@@ -16,10 +16,10 @@ import LinearAlgebra: BlasReal
 
 export
     # types
-    AbstractPolrModel,
-    PolrModel,
-    PolrLrtTest,
-    PolrScoreTest,
+    AbstractOrdinalMultinomialModel,
+    OrdinalMultinomialModel,
+    OrdinalMultinomialLrtTest,
+    OrdinalMultinomialScoreTest,
     # functions
     coef,
     coeftable,
@@ -34,9 +34,8 @@ export
     nobs,
     polr,
     polrtest,
-    polrfun!,
-    polrfit,
-    polrtest,
+    loglikelihood!,
+    fit,
     predict,
     response,
     rpolr,
@@ -45,16 +44,16 @@ export
     vcov,
     weights
 
-abstract type AbstractPolrModel <: RegressionModel end
-drop_intercept(::Type{AbstractPolrModel}) = true
+abstract type AbstractOrdinalMultinomialModel <: RegressionModel end
+drop_intercept(::Type{AbstractOrdinalMultinomialModel}) = true
 
 """
-    PolrModel
+    OrdinalMultinomialModel
 
 Data, parameters, and various derived variables for the proportional odds
 logistic regression model.
 """
-struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
+struct OrdinalMultinomialModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
     # dimensions
     "`n`: number of observations"
     n::Int
@@ -104,7 +103,7 @@ struct PolrModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.Abstrac
 end
 
 # Constructor
-function PolrModel(
+function OrdinalMultinomialModel(
     X::Matrix{T},
     y::Vector{TY},
     wts::Vector{T} = similar(X, 0),
@@ -137,27 +136,27 @@ function PolrModel(
     wt∂θ∂β = zeros(T, n, J - 1)
     wt∂β∂β = zeros(T, n)
     scratchm1 = zero(X)
-    PolrModel{eltype(y), eltype(X), typeof(link)}(n, p, J, npar, y, X, wts,
+    OrdinalMultinomialModel{eltype(y), eltype(X), typeof(link)}(n, p, J, npar, y, X, wts,
         θ, α, β, link, η, dθdα, ∇, FIM, vcov, wtwk, wt∂β, wt∂θ∂β, wt∂β∂β, scratchm1)
 end
-PolrModel(X, y, link) = PolrModel(X, y, similar(X, 0), link)
+OrdinalMultinomialModel(X, y, link) = OrdinalMultinomialModel(X, y, similar(X, 0), link)
 
-coef(m::PolrModel) = [m.θ; m.β]
-deviance(m::PolrModel) = -2polrfun!(m, false, false)
-dof(m::PolrModel) = m.npar
-dof_residual(m::PolrModel) = m.n - m.npar
-fitted(m::PolrModel) = nothing # TODO
-loglikelihood(m::PolrModel) = polrfun!(m, false, false)
-modelmatrix(m::PolrModel) = m.X
-nobs(m::PolrModel) = m.n
-predict(m::PolrModel) = nothing # TODO
-response(m::PolrModel) = m.y
-score(m::PolrModel) = m.∇
-stderror(m::PolrModel) = sqrt.(diag(m.vcov))
-vcov(m::PolrModel) = m.vcov
-weights(m::PolrModel) = m.wts
+coef(m::OrdinalMultinomialModel) = [m.θ; m.β]
+deviance(m::OrdinalMultinomialModel) = -2loglikelihood!(m, false, false)
+dof(m::OrdinalMultinomialModel) = m.npar
+dof_residual(m::OrdinalMultinomialModel) = m.n - m.npar
+fitted(m::OrdinalMultinomialModel) = nothing # TODO
+loglikelihood(m::OrdinalMultinomialModel) = loglikelihood!(m, false, false)
+modelmatrix(m::OrdinalMultinomialModel) = m.X
+nobs(m::OrdinalMultinomialModel) = m.n
+predict(m::OrdinalMultinomialModel) = nothing # TODO
+response(m::OrdinalMultinomialModel) = m.y
+score(m::OrdinalMultinomialModel) = m.∇
+stderror(m::OrdinalMultinomialModel) = sqrt.(diag(m.vcov))
+vcov(m::OrdinalMultinomialModel) = m.vcov
+weights(m::OrdinalMultinomialModel) = m.wts
 
-function coeftable(m::PolrModel)
+function coeftable(m::OrdinalMultinomialModel)
     cc = coef(m)
     se = stderror(m)
     tt = cc ./ se
@@ -166,11 +165,11 @@ function coeftable(m::PolrModel)
               [["θ$i" for i = 1:m.J-1]; ["β$i" for i = 1:m.p]], 4)
 end
 
-confint(m::PolrModel, level::Real) = hcat(coef(m), coef(m)) +
+confint(m::OrdinalMultinomialModel, level::Real) = hcat(coef(m), coef(m)) +
     stderror(m) * quantile(Normal(), (1. - level) / 2.) * [1. -1.]
-confint(m::PolrModel) = confint(m, 0.95)
+confint(m::OrdinalMultinomialModel) = confint(m, 0.95)
 
-function cor(m::PolrModel)
+function cor(m::OrdinalMultinomialModel)
     Σ = vcov(m)
     invstd = similar(Σ, size(Σ, 1))
     for i in eachindex(invstd)
@@ -179,8 +178,8 @@ function cor(m::PolrModel)
     lmul!(Diagonal(invstd), rmul!(Σ, Diagonal(invstd)))
 end
 
-include("polrrand.jl")
-include("polrfit.jl")
-include("polrtest.jl")
+include("ordmnrand.jl")
+include("ordmnfit.jl")
+include("ordmntest.jl")
 
 end # module
