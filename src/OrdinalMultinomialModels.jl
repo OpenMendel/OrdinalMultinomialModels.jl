@@ -34,8 +34,10 @@ export
     nobs,
     polr,
     polrtest,
+    loglikelihood,
     loglikelihood!,
     fit,
+    fitted,
     predict,
     response,
     rpolr,
@@ -150,7 +152,7 @@ loglikelihood(m::OrdinalMultinomialModel) = loglikelihood!(m, false, false)
 modelmatrix(m::OrdinalMultinomialModel) = m.X
 nobs(m::OrdinalMultinomialModel) = m.n
 predict(m::OrdinalMultinomialModel) = nothing # TODO
-response(m::OrdinalMultinomialModel) = m.y
+response(m::OrdinalMultinomialModel) = m.Y
 score(m::OrdinalMultinomialModel) = m.∇
 stderror(m::OrdinalMultinomialModel) = sqrt.(diag(m.vcov))
 vcov(m::OrdinalMultinomialModel) = m.vcov
@@ -161,7 +163,7 @@ function coeftable(m::OrdinalMultinomialModel)
     se = stderror(m)
     tt = cc ./ se
     CoefTable(hcat(cc, se, tt, ccdf.(FDist(1, dof_residual(m)), abs2.(tt))),
-              ["Estimate","Std.Error","t value", "Pr(>|t|)"],
+              ["Estimate", "Std.Error", "t value", "Pr(>|t|)"],
               [["θ$i" for i = 1:m.J-1]; ["β$i" for i = 1:m.p]], 4)
 end
 
@@ -170,7 +172,7 @@ confint(m::OrdinalMultinomialModel, level::Real) = hcat(coef(m), coef(m)) +
 confint(m::OrdinalMultinomialModel) = confint(m, 0.95)
 
 function cor(m::OrdinalMultinomialModel)
-    Σ = vcov(m)
+    Σ = copy(vcov(m))
     invstd = similar(Σ, size(Σ, 1))
     for i in eachindex(invstd)
         invstd[i] = 1 / sqrt(Σ[i, i])
