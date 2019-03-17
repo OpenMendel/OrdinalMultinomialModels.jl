@@ -7,7 +7,7 @@ OrdinalMultinomialModels.jl provides Julia utilities to fit ordered multinomial 
 
 This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the `]` key to switch to the package manager REPL
 ```julia
-(v1.0) pkg> add https://github.com/OpenMendel/OrdinalMultinomialModels.jl.git
+(v1.1) pkg> add https://github.com/OpenMendel/OrdinalMultinomialModels.jl
 ```
 
 
@@ -16,14 +16,14 @@ This package requires Julia v0.7 or later. The package has not yet been register
 versioninfo()
 ```
 
-    Julia Version 1.0.3
-    Commit 099e826241 (2018-12-18 01:34 UTC)
+    Julia Version 1.1.0
+    Commit 80516ca202 (2019-01-21 21:24 UTC)
     Platform Info:
       OS: macOS (x86_64-apple-darwin14.5.0)
       CPU: Intel(R) Core(TM) i7-6920HQ CPU @ 2.90GHz
       WORD_SIZE: 64
       LIBM: libopenlibm
-      LLVM: libLLVM-6.0.0 (ORCJIT, skylake)
+      LLVM: libLLVM-6.0.1 (ORCJIT, skylake)
     Environment:
       JULIA_EDITOR = code
 
@@ -322,8 +322,8 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
     Number of equality constraint Jacobian evaluations   = 0
     Number of inequality constraint Jacobian evaluations = 0
     Number of Lagrangian Hessian evaluations             = 0
-    Total CPU secs in IPOPT (w/o function evaluations)   =      0.056
-    Total CPU secs in NLP function evaluations           =      0.005
+    Total CPU secs in IPOPT (w/o function evaluations)   =      0.058
+    Total CPU secs in NLP function evaluations           =      0.007
     
     EXIT: Optimal Solution Found.
 
@@ -516,7 +516,7 @@ polrtest(house_null, z1)
 
 
 
-    2.1636960843690103e-8
+    0.009613353763486732
 
 
 
@@ -531,6 +531,6 @@ polrtest(house_null, z3)
 
 
 
-    6.604009932187192e-26
+    3.4879190648445084e-12
 
 
