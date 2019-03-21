@@ -235,3 +235,13 @@ function MathProgBase.eval_grad_f(m::OrdinalMultinomialModel, grad::Vector, par:
     @views mul!(grad[1:m.J-1], m.dθdα, m.∇[1:m.J-1])
     copyto!(grad, m.J, m.∇, m.J, m.p)
 end
+
+function StatsModels.coeftable(mod::StatsModels.DataFrameRegressionModel{T, S} 
+    where {T <: OrdinalMultinomialModel, S <: Matrix} )
+    ct = coeftable(mod.model)
+    cfnames = [["intercept$i|$(i+1)" for i in 1:(mod.model.J - 1)]; coefnames(mod)]
+    if length(ct.rownms) == length(cfnames)
+        ct.rownms = cfnames
+    end
+    ct
+end
