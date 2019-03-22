@@ -23,7 +23,7 @@ housing = dataset("MASS", "housing")
         @test vcov(houseplr.model) === houseplr.model.vcov
         @test all(abs.(cor(houseplr.model)) .≤ 1 + eps(Float64))
         @test all(weights(houseplr.model) .== housing[:Freq])
-        @show coeftable(houseplr.model)
+        @show coeftable(houseplr)
         @show confint(houseplr.model)
     end
 end
