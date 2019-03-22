@@ -31,7 +31,7 @@ versioninfo()
 
 ```julia
 # for use in this tutorial
-using OrdinalMultinomialModels, BenchmarkTools
+using OrdinalMultinomialModels, BenchmarkTools, RDatasets
 ```
 
 ## Example data
@@ -40,8 +40,6 @@ using OrdinalMultinomialModels, BenchmarkTools
 
 
 ```julia
-using RDatasets
-
 housing = dataset("MASS", "housing")
 ```
 
@@ -92,15 +90,15 @@ house_po = polr(@formula(Sat ~ Infl + Type + Cont), housing, wts = housing[:Freq
     Formula: Sat ~ Infl + Type + Cont
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496141  0.124541 -3.98376   0.0002
-    θ2    0.690706  0.125212  5.51628    <1e-6
-    β1    0.566392  0.104963  5.39611    <1e-5
-    β2     1.28881  0.126705  10.1718   <1e-14
-    β3   -0.572352  0.118747 -4.81991    <1e-5
-    β4   -0.366182  0.156766 -2.33586   0.0226
-    β5    -1.09101  0.151514 -7.20075    <1e-9
-    β6    0.360284 0.0953574  3.77825   0.0003
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.496141  0.124541 -3.98376   0.0002
+    intercept2|3      0.690706  0.125212  5.51628    <1e-6
+    Infl: Medium      0.566392  0.104963  5.39611    <1e-5
+    Infl: High         1.28881  0.126705  10.1718   <1e-14
+    Type: Apartment  -0.572352  0.118747 -4.81991    <1e-5
+    Type: Atrium     -0.366182  0.156766 -2.33586   0.0226
+    Type: Terrace     -1.09101  0.151514 -7.20075    <1e-9
+    Cont: High        0.360284 0.0953574  3.77825   0.0003
 
 
 
@@ -182,15 +180,15 @@ house_op = polr(@formula(Sat ~ Infl + Type + Cont), housing, ProbitLink(), wts =
     Formula: Sat ~ Infl + Type + Cont
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.299829 0.0761614 -3.93676   0.0002
-    θ2     0.42672 0.0763991   5.5854    <1e-6
-    β1    0.346423 0.0641796  5.39771    <1e-5
-    β2    0.782914 0.0762645  10.2658   <1e-14
-    β3   -0.347538 0.0722116 -4.81278    <1e-5
-    β4   -0.217889 0.0955741 -2.27979   0.0260
-    β5   -0.664175 0.0919294 -7.22484    <1e-9
-    β6    0.222386 0.0581214  3.82624   0.0003
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.299829 0.0761614 -3.93676   0.0002
+    intercept2|3       0.42672 0.0763991   5.5854    <1e-6
+    Infl: Medium      0.346423 0.0641796  5.39771    <1e-5
+    Infl: High        0.782914 0.0762645  10.2658   <1e-14
+    Type: Apartment  -0.347538 0.0722116 -4.81278    <1e-5
+    Type: Atrium     -0.217889 0.0955741 -2.27979   0.0260
+    Type: Terrace    -0.664175 0.0919294 -7.22484    <1e-9
+    Cont: High        0.222386 0.0581214  3.82624   0.0003
 
 
 
@@ -224,15 +222,15 @@ house_ph = polr(@formula(Sat ~ Infl + Type + Cont), housing, CloglogLink(), wts 
     Formula: Sat ~ Infl + Type + Cont
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.796225 0.0904739  -8.8006   <1e-11
-    θ2   0.0553535 0.0866662 0.638697   0.5253
-    β1    0.382045 0.0701219  5.44829    <1e-6
-    β2    0.915384 0.0924967  9.89639   <1e-13
-    β3   -0.407228 0.0861331 -4.72789    <1e-4
-    β4    -0.28056  0.112949 -2.48396   0.0156
-    β5   -0.742481  0.102084 -7.27321    <1e-9
-    β6    0.209235 0.0653756   3.2005   0.0021
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.796225 0.0904739  -8.8006   <1e-11
+    intercept2|3     0.0553535 0.0866662 0.638697   0.5253
+    Infl: Medium      0.382045 0.0701219  5.44829    <1e-6
+    Infl: High        0.915384 0.0924967  9.89639   <1e-13
+    Type: Apartment  -0.407228 0.0861331 -4.72789    <1e-4
+    Type: Atrium      -0.28056  0.112949 -2.48396   0.0156
+    Type: Terrace    -0.742481  0.102084 -7.27321    <1e-9
+    Cont: High        0.209235 0.0653756   3.2005   0.0021
 
 
 
@@ -322,8 +320,8 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
     Number of equality constraint Jacobian evaluations   = 0
     Number of inequality constraint Jacobian evaluations = 0
     Number of Lagrangian Hessian evaluations             = 0
-    Total CPU secs in IPOPT (w/o function evaluations)   =      0.058
-    Total CPU secs in NLP function evaluations           =      0.007
+    Total CPU secs in IPOPT (w/o function evaluations)   =      0.050
+    Total CPU secs in NLP function evaluations           =      0.006
     
     EXIT: Optimal Solution Found.
 
@@ -336,15 +334,15 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
     Formula: Sat ~ Infl + Type + Cont
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496135  0.124541 -3.98372   0.0002
-    θ2    0.690708  0.125212   5.5163    <1e-6
-    β1    0.566394  0.104963  5.39613    <1e-5
-    β2     1.28882  0.126705  10.1718   <1e-14
-    β3    -0.57235  0.118747  -4.8199    <1e-5
-    β4   -0.366186  0.156766 -2.33588   0.0226
-    β5    -1.09101  0.151514 -7.20077    <1e-9
-    β6    0.360284 0.0953575  3.77825   0.0003
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.496135  0.124541 -3.98372   0.0002
+    intercept2|3      0.690708  0.125212   5.5163    <1e-6
+    Infl: Medium      0.566394  0.104963  5.39613    <1e-5
+    Infl: High         1.28882  0.126705  10.1718   <1e-14
+    Type: Apartment   -0.57235  0.118747  -4.8199    <1e-5
+    Type: Atrium     -0.366186  0.156766 -2.33588   0.0226
+    Type: Terrace     -1.09101  0.151514 -7.20077    <1e-9
+    Cont: High        0.360284 0.0953575  3.77825   0.0003
 
 
 
@@ -365,15 +363,15 @@ polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(),
     Formula: Sat ~ Infl + Type + Cont
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496141  0.124541 -3.98376   0.0002
-    θ2    0.690706  0.125212  5.51628    <1e-6
-    β1    0.566392  0.104963  5.39611    <1e-5
-    β2     1.28881  0.126705  10.1718   <1e-14
-    β3   -0.572352  0.118747 -4.81991    <1e-5
-    β4   -0.366182  0.156766 -2.33586   0.0226
-    β5    -1.09101  0.151514 -7.20075    <1e-9
-    β6    0.360284 0.0953574  3.77825   0.0003
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.496141  0.124541 -3.98376   0.0002
+    intercept2|3      0.690706  0.125212  5.51628    <1e-6
+    Infl: Medium      0.566392  0.104963  5.39611    <1e-5
+    Infl: High         1.28881  0.126705  10.1718   <1e-14
+    Type: Apartment  -0.572352  0.118747 -4.81991    <1e-5
+    Type: Atrium     -0.366182  0.156766 -2.33586   0.0226
+    Type: Terrace     -1.09101  0.151514 -7.20075    <1e-9
+    Cont: High        0.360284 0.0953574  3.77825   0.0003
 
 
 
@@ -394,15 +392,15 @@ polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(),
     Formula: Sat ~ Infl + Type + Cont
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.496111  0.124541 -3.98353   0.0002
-    θ2    0.690732  0.125212  5.51649    <1e-6
-    β1    0.566394  0.104963  5.39613    <1e-5
-    β2     1.28882  0.126705  10.1718   <1e-14
-    β3   -0.572352  0.118747 -4.81991    <1e-5
-    β4    -0.36616  0.156766 -2.33571   0.0227
-    β5    -1.09102  0.151514  -7.2008    <1e-9
-    β6    0.360319 0.0953575  3.77861   0.0003
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.496111  0.124541 -3.98353   0.0002
+    intercept2|3      0.690732  0.125212  5.51649    <1e-6
+    Infl: Medium      0.566394  0.104963  5.39613    <1e-5
+    Infl: High         1.28882  0.126705  10.1718   <1e-14
+    Type: Apartment  -0.572352  0.118747 -4.81991    <1e-5
+    Type: Atrium      -0.36616  0.156766 -2.33571   0.0227
+    Type: Terrace     -1.09102  0.151514  -7.2008    <1e-9
+    Cont: High        0.360319 0.0953575  3.77861   0.0003
 
 
 
@@ -426,14 +424,14 @@ house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])
     Formula: Sat ~ Infl + Type
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.672949  0.115559 -5.82341    <1e-6
-    θ2    0.505629  0.115147  4.39116    <1e-4
-    β1    0.548392  0.104613  5.24213    <1e-5
-    β2      1.2373  0.125448  9.86306   <1e-13
-    β3   -0.521441  0.117616 -4.43341    <1e-4
-    β4   -0.289347  0.155074 -1.86587   0.0666
-    β5    -1.01404   0.14976  -6.7711    <1e-8
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.672949  0.115559 -5.82341    <1e-6
+    intercept2|3      0.505629  0.115147  4.39116    <1e-4
+    Infl: Medium      0.548392  0.104613  5.24213    <1e-5
+    Infl: High          1.2373  0.125448  9.86306   <1e-13
+    Type: Apartment  -0.521441  0.117616 -4.43341    <1e-4
+    Type: Atrium     -0.289347  0.155074 -1.86587   0.0666
+    Type: Terrace     -1.01404   0.14976  -6.7711    <1e-8
 
 
 
@@ -474,14 +472,14 @@ house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])
     Formula: Sat ~ Infl + Type
     
     Coefficients:
-          Estimate Std.Error  t value Pr(>|t|)
-    θ1   -0.672949  0.115559 -5.82341    <1e-6
-    θ2    0.505629  0.115147  4.39116    <1e-4
-    β1    0.548392  0.104613  5.24213    <1e-5
-    β2      1.2373  0.125448  9.86306   <1e-13
-    β3   -0.521441  0.117616 -4.43341    <1e-4
-    β4   -0.289347  0.155074 -1.86587   0.0666
-    β5    -1.01404   0.14976  -6.7711    <1e-8
+                      Estimate Std.Error  t value Pr(>|t|)
+    intercept1|2     -0.672949  0.115559 -5.82341    <1e-6
+    intercept2|3      0.505629  0.115147  4.39116    <1e-4
+    Infl: Medium      0.548392  0.104613  5.24213    <1e-5
+    Infl: High          1.2373  0.125448  9.86306   <1e-13
+    Type: Apartment  -0.521441  0.117616 -4.43341    <1e-4
+    Type: Atrium     -0.289347  0.155074 -1.86587   0.0666
+    Type: Terrace     -1.01404   0.14976  -6.7711    <1e-8
 
 
 
@@ -516,7 +514,7 @@ polrtest(house_null, z1)
 
 
 
-    0.009613353763486732
+    0.1673512522966108
 
 
 
@@ -531,6 +529,6 @@ polrtest(house_null, z3)
 
 
 
-    3.4879190648445084e-12
+    6.709335149358069e-10
 
 
