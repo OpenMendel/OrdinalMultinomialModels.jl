@@ -91,15 +91,19 @@ function polrtest(d::OrdinalMultinomialScoreTest)
     mul!(d.scratchm3, d.scratchm2, transpose(d.∂γ∂θβ))
     d.scratchm3 .= d.∂γ∂γ .- d.scratchm3
     # compute ts = R^T (Q - W' P^{-1} W)^{-1} R
-    bkfact = bunchkaufman!(Symmetric(d.scratchm3), check=false)
-    if issuccess(bkfact)
-        ldiv!(d.scratchv1, bkfact, d.scoreγ)
-        ts = dot(d.scoreγ, d.scratchv1)
-        pval = ts ≤ 0 ? 1.0 : ccdf(Chisq(d.q), ts)
-    else # Q - W' P^{-1} W is singular
-        pval = 1.0
+    eigfact = eigen!(Symmetric(d.scratchm3))
+    mul!(d.scratchv1, transpose(eigfact.vectors), d.scoreγ)
+    T = eltype(d.scoreγ)
+    atol = 1e-8 # tolerance for determining rank
+    rk = 0 # rank
+    ts = zero(T)
+    for j in 1:d.q
+        if eigfact.values[j] > atol
+            ts += abs2(d.scratchv1[j]) / eigfact.values[j]
+            rk += 1
+        end
     end
-    pval
+    pval = ts ≤ 0 ? 1.0 : ccdf(Chisq(rk), ts)
 end
 
 
