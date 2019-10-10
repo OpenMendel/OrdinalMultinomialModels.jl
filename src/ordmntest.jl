@@ -8,7 +8,7 @@ function polrtest(nm::OrdinalMultinomialModel, Z::AbstractVecOrMat; test=:score)
     end
 end
 
-polrtest(nm::StatsModels.DataFrameRegressionModel{<:OrdinalMultinomialModel}, Z::AbstractVecOrMat; kwargs...) = 
+polrtest(nm::StatsModels.TableRegressionModel{<:OrdinalMultinomialModel}, Z::AbstractVecOrMat; kwargs...) = 
 polrtest(nm.model, Z; kwargs...)
 
 ###########################

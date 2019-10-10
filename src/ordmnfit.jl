@@ -158,7 +158,7 @@ Fit ordered multinomial model by maximum likelihood estimation.
 """
 polr(X::AbstractMatrix, y::AbstractVector, args...; kwargs...) = 
     fit(AbstractOrdinalMultinomialModel, X, y, args...; kwargs...)
-polr(f::Formula, df, args...; kwargs...) = 
+polr(f::FormulaTerm, df, args...; kwargs...) = 
     fit(AbstractOrdinalMultinomialModel, f, df, args...; kwargs...)
 
 """
@@ -178,20 +178,29 @@ Fit ordered multinomial model by maximum likelihood estimation.
 function fit(
     ::Type{M},
     X::AbstractMatrix,
-    y::AbstractVector,
+    y::AbstractVecOrMat,
     link::GLM.Link = LogitLink(),
     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
     wts::AbstractVector = similar(X, 0)
     ) where M <: AbstractOrdinalMultinomialModel
+    ydata = Vector{Int}(undef, size(y, 1))
     # set up optimization
-    ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
+    if size(y, 2) == 1
+        ydata = denserank(y)
+    else #y is encoded via dummy-encoding 
+        for i in 1:size(y, 1)
+            idx = findfirst(view(y, i, :) .== 1)
+            ydata[i] = idx == nothing ? 1 : idx + 1
+        end
+    end
+    #ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
     dd = OrdinalMultinomialModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
     m = MathProgBase.NonlinearModel(solver)
     lb = fill(-Inf, dd.npar)
     ub = fill( Inf, dd.npar)
     MathProgBase.loadproblem!(m, dd.npar, 0, lb, ub, Float64[], Float64[], :Max, dd)
     # initialize from LS solution
-    β0 = [ones(length(y)) X] \ ydata
+    β0 = [ones(length(ydata)) X] \ ydata
     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
     MathProgBase.setwarmstart!(m, par0)
     MathProgBase.optimize!(m)
@@ -236,7 +245,7 @@ function MathProgBase.eval_grad_f(m::OrdinalMultinomialModel, grad::Vector, par:
     copyto!(grad, m.J, m.∇, m.J, m.p)
 end
 
-function StatsModels.coeftable(mod::StatsModels.DataFrameRegressionModel{T, S} 
+function StatsModels.coeftable(mod::StatsModels.TableRegressionModel{T, S} 
     where {T <: OrdinalMultinomialModel, S <: Matrix} )
     ct = coeftable(mod.model)
     cfnames = [["intercept$i|$(i+1)" for i in 1:(mod.model.J - 1)]; coefnames(mod)]
