@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>OrdinalMultinomialModels.jl · OrdinalMultinomialModels</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>OrdinalMultinomialModels</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li class="current"><a class="toctext" href>OrdinalMultinomialModels.jl</a><ul class="internal"><li><a class="toctext" href="#Installation-1">Installation</a></li><li><a class="toctext" href="#Example-data-1">Example data</a></li><li><a class="toctext" href="#Syntax-1">Syntax</a></li><li><a class="toctext" href="#Fit-ordered-multinomial-models-1">Fit ordered multinomial models</a></li><li><a class="toctext" href="#Optimization-algorithms-1">Optimization algorithms</a></li><li><a class="toctext" href="#Likelihood-ratio-test-(LRT)-1">Likelihood ratio test (LRT)</a></li><li><a class="toctext" href="#Score-test-1">Score test</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href>OrdinalMultinomialModels.jl</a></li></ul><a class="edit-page" href="https://github.com/OpenMendel/OrdinalMultinomialModels.jl/blob/master/docs/src/index.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>OrdinalMultinomialModels.jl</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="OrdinalMultinomialModels.jl-1" href="#OrdinalMultinomialModels.jl-1">OrdinalMultinomialModels.jl</a></h1><p>OrdinalMultinomialModels.jl provides Julia utilities to fit ordered multinomial models, including <a href="https://en.wikipedia.org/wiki/Ordered_logit">proportional odds model</a> and <a href="https://en.wikipedia.org/wiki/Ordered_probit">ordered Probit model</a> as special cases. </p><h2><a class="nav-anchor" id="Installation-1" href="#Installation-1">Installation</a></h2><p>This package requires Julia v0.7 or later. The package has not yet been registered and must be installed using the repository location. Start julia and use the <code>]</code> key to switch to the package manager REPL</p><pre><code class="language-julia">(v1.1) pkg&gt; add https://github.com/OpenMendel/OrdinalMultinomialModels.jl</code></pre><pre><code class="language-julia"># Machine info for results in this tutorial
+versioninfo()</code></pre><pre><code class="language-none">Julia Version 1.1.0
+Commit 80516ca202 (2019-01-21 21:24 UTC)
+Platform Info:
+  OS: macOS (x86_64-apple-darwin14.5.0)
+  CPU: Intel(R) Core(TM) i7-6920HQ CPU @ 2.90GHz
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-6.0.1 (ORCJIT, skylake)
+Environment:
+  JULIA_EDITOR = code</code></pre><pre><code class="language-julia"># for use in this tutorial
+using OrdinalMultinomialModels, BenchmarkTools, RDatasets</code></pre><h2><a class="nav-anchor" id="Example-data-1" href="#Example-data-1">Example data</a></h2><p><code>housing</code> is a data set from R package <a href="https://cran.r-project.org/web/packages/MASS/index.html">MASS</a>. The outcome of interest is <code>Sat</code> (satisfication) that takes values <code>Low</code>, <code>Medium</code>, or <code>High</code>. Predictors include <code>Infl</code> (inflation, categorical), <code>Type</code> (housing type, categorical), and <code>Cont</code> (categorical). <code>Freq</code> codes number of observation for each combination of levels.</p><pre><code class="language-julia">housing = dataset(&quot;MASS&quot;, &quot;housing&quot;)</code></pre><p>&lt;table class=&quot;data-frame&quot;&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;Sat&lt;/th&gt;&lt;th&gt;Infl&lt;/th&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Cont&lt;/th&gt;&lt;th&gt;Freq&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;Categorical…&lt;/th&gt;&lt;th&gt;Categorical…&lt;/th&gt;&lt;th&gt;Categorical…&lt;/th&gt;&lt;th&gt;Categorical…&lt;/th&gt;&lt;th&gt;Int32&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&lt;p&gt;72 rows × 5 columns&lt;/p&gt;&lt;tr&gt;&lt;th&gt;1&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;21&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;2&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;21&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;3&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;28&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;4&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;34&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;5&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;22&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;6&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;36&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;7&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;10&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;8&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;11&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;9&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Tower&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;36&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;10&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;61&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;11&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;23&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;12&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;17&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;13&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;43&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;14&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;35&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;15&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;40&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;16&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;26&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;17&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;18&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;18&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Apartment&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;54&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;19&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;13&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;20&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;9&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;21&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;10&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;22&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;8&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;23&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;8&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;24&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;12&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;25&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;26&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;7&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;27&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Atrium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;9&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;28&lt;/th&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Terrace&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;18&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;29&lt;/th&gt;&lt;td&gt;Medium&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Terrace&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;6&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;30&lt;/th&gt;&lt;td&gt;High&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;Terrace&lt;/td&gt;&lt;td&gt;Low&lt;/td&gt;&lt;td&gt;7&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;&amp;vellip;&lt;/th&gt;&lt;td&gt;&amp;vellip;&lt;/td&gt;&lt;td&gt;&amp;vellip;&lt;/td&gt;&lt;td&gt;&amp;vellip;&lt;/td&gt;&lt;td&gt;&amp;vellip;&lt;/td&gt;&lt;td&gt;&amp;vellip;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;</p><p>There are 72 unique combination of levels and the total number of observations is 1,681.</p><pre><code class="language-julia">size(housing, 1), sum(housing[:Freq])</code></pre><pre><code class="language-none">(72, 1681)</code></pre><h2><a class="nav-anchor" id="Syntax-1" href="#Syntax-1">Syntax</a></h2><p><code>polr</code> is the main function of fitting ordered multinomial model. For documentation, type <code>?polr</code> at Julia REPL.</p><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="OrdinalMultinomialModels.polr" href="#OrdinalMultinomialModels.polr"><code>OrdinalMultinomialModels.polr</code></a> — <span class="docstring-category">Function</span>.</div><div><div><pre><code class="language-julia">polr(formula, df, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
+polr(X, y, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))</code></pre><p>Fit ordered multinomial model by maximum likelihood estimation.</p><p><strong>Positional arguments</strong></p><ul><li><code>formula::Formula</code>: a model formula specifying responses and regressors.</li><li><code>df::DataFrame</code>: a dataframe. Response variable should take integer values    starting from 1.</li><li><code>y::Vector</code>: integer vector taking values in <code>1,...,J</code>.</li><li><code>X::Matrix</code>: <code>n x p</code> covariate matrix excluding intercept.</li><li><code>link::GLM.Link</code>: <code>LogitLink()</code> (default), <code>ProbitLink()</code>, <code>CauchitLink()</code>, or <code>CloglogLink()</code>.</li><li><code>solver</code>: <code>NLoptSolver()</code> (default) or <code>IpoptSolver()</code>.</li></ul><p><strong>Keyword arguments</strong></p><ul><li><code>wts::AbstractVector=similar(X, 0)</code>: observation weights.</li></ul><p><strong>Output</strong></p><ul><li><code>dd:PolrModel</code>: a <code>PolrModel</code> type.</li></ul></div></div><a class="source-link" target="_blank" href="https://github.com/OpenMendel/OrdinalMultinomialModels.jl/blob/25770b259ad014d86e40acb94959421f38b501fb/src/ordmnfit.jl#L138-L158">source</a></section><h2><a class="nav-anchor" id="Fit-ordered-multinomial-models-1" href="#Fit-ordered-multinomial-models-1">Fit ordered multinomial models</a></h2><h3><a class="nav-anchor" id="Proportional-odds-model-1" href="#Proportional-odds-model-1">Proportional odds model</a></h3><p>To fit an ordered multinomial model using default link <code>link=LogitLink()</code>, i.e., proportional odds model</p><pre><code class="language-julia">house_po = polr(@formula(Sat ~ Infl + Type + Cont), housing, wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type + Cont
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.496141  0.124541 -3.98376   0.0002
+intercept2|3      0.690706  0.125212  5.51628    &lt;1e-6
+Infl: Medium      0.566392  0.104963  5.39611    &lt;1e-5
+Infl: High         1.28881  0.126705  10.1718   &lt;1e-14
+Type: Apartment  -0.572352  0.118747 -4.81991    &lt;1e-5
+Type: Atrium     -0.366182  0.156766 -2.33586   0.0226
+Type: Terrace     -1.09101  0.151514 -7.20075    &lt;1e-9
+Cont: High        0.360284 0.0953574  3.77825   0.0003</code></pre><p>Since there are <span>$J=3$</span> categories in <code>Sat</code>, the fitted model has 2 intercept parameters <span>$\theta_1$</span> and <span>$\theta_2$</span> that satisfy <span>$\theta_1 \le \theta_2$</span>. <span>$\beta_1, \beta_2$</span> are regression coefficients for <code>Infl</code> (3 levels), <span>$\beta_3, \beta_4, \beta_5$</span> for <code>Type</code> (4 levels), and <span>$\beta_6$</span> for <code>Cont</code> (2 levels). </p><p>Deviance (-2 loglikelihood) of the fitted model is</p><pre><code class="language-julia">deviance(house_po)</code></pre><pre><code class="language-none">3479.149299072586</code></pre><p>Estimated regression coefficients are</p><pre><code class="language-julia">coef(house_po)</code></pre><pre><code class="language-none">8-element Array{Float64,1}:
+ -0.4961406134145464 
+  0.6907056439400198 
+  0.5663915864515743 
+  1.288810825003427  
+ -0.5723518911944654 
+ -0.36618227185604263
+ -1.0910115747375622 
+  0.36028444175284197</code></pre><p>with standard errors</p><pre><code class="language-julia">stderror(house_po)</code></pre><pre><code class="language-none">8-element Array{Float64,1}:
+ 0.12454076603722913
+ 0.1252121074560087 
+ 0.10496298447216806
+ 0.1267047666889804 
+ 0.11874734570694132
+ 0.1567658347801272 
+ 0.15151363694373737
+ 0.09535742939732537</code></pre><h3><a class="nav-anchor" id="Ordered-probit-model-1" href="#Ordered-probit-model-1">Ordered probit model</a></h3><p>To fit an ordered probit model, we use link <code>ProbitLink()</code></p><pre><code class="language-julia">house_op = polr(@formula(Sat ~ Infl + Type + Cont), housing, ProbitLink(), wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,ProbitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type + Cont
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.299829 0.0761614 -3.93676   0.0002
+intercept2|3       0.42672 0.0763991   5.5854    &lt;1e-6
+Infl: Medium      0.346423 0.0641796  5.39771    &lt;1e-5
+Infl: High        0.782914 0.0762645  10.2658   &lt;1e-14
+Type: Apartment  -0.347538 0.0722116 -4.81278    &lt;1e-5
+Type: Atrium     -0.217889 0.0955741 -2.27979   0.0260
+Type: Terrace    -0.664175 0.0919294 -7.22484    &lt;1e-9
+Cont: High        0.222386 0.0581214  3.82624   0.0003</code></pre><pre><code class="language-julia">deviance(house_op)</code></pre><pre><code class="language-none">3479.6888425652414</code></pre><h3><a class="nav-anchor" id="Proportional-hazards-model-1" href="#Proportional-hazards-model-1">Proportional hazards model</a></h3><p>To fit a proportional hazards model, we use <code>CloglogLink()</code></p><pre><code class="language-julia">house_ph = polr(@formula(Sat ~ Infl + Type + Cont), housing, CloglogLink(), wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,CloglogLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type + Cont
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.796225 0.0904739  -8.8006   &lt;1e-11
+intercept2|3     0.0553535 0.0866662 0.638697   0.5253
+Infl: Medium      0.382045 0.0701219  5.44829    &lt;1e-6
+Infl: High        0.915384 0.0924967  9.89639   &lt;1e-13
+Type: Apartment  -0.407228 0.0861331 -4.72789    &lt;1e-4
+Type: Atrium      -0.28056  0.112949 -2.48396   0.0156
+Type: Terrace    -0.742481  0.102084 -7.27321    &lt;1e-9
+Cont: High        0.209235 0.0653756   3.2005   0.0021</code></pre><pre><code class="language-julia">deviance(house_ph)</code></pre><pre><code class="language-none">3484.0531705626904</code></pre><p>From the deviances, we see that the proportional odds model (logit link) has the best fit among all three models.</p><pre><code class="language-julia">deviance(house_po), deviance(house_op), deviance(house_ph)</code></pre><pre><code class="language-none">(3479.149299072586, 3479.6888425652414, 3484.0531705626904)</code></pre><h3><a class="nav-anchor" id="Alternative-syntax-without-using-DataFrame-1" href="#Alternative-syntax-without-using-DataFrame-1">Alternative syntax without using DataFrame</a></h3><p>An alternative syntax is useful when it is inconvenient to use DataFrame</p><pre><code class="language-julia">polr(X, y, link, solver; wts)</code></pre><p>where <code>y</code> is the response vector and <code>X</code> is the <code>n x p</code> predictor matrix <strong>excluding</strong> intercept.</p><h2><a class="nav-anchor" id="Optimization-algorithms-1" href="#Optimization-algorithms-1">Optimization algorithms</a></h2><p>PolrModels.jl relies on nonlinear programming (NLP) optimization algorithms to find the maximum likelihood estimate (MLE). User can input any solver supported by the MathProgBase.jl package (see <a href="http://www.juliaopt.org">http://www.juliaopt.org</a>) as the 4th argument of <code>polr</code> function. Common choices are:  </p><ul><li>Ipopt solver: <code>IpoptSolver(print_level=0)</code>. See <a href="https://github.com/JuliaOpt/Ipopt.jl">Ipopt.jl</a> for numerous arugments to <code>IpoptSolver</code>. For example, setting <code>print_level=5</code> is useful for diagnosis purpose.   </li><li><a href="https://github.com/JuliaOpt/NLopt.jl">NLopt package</a>: <code>NLoptSolver(algorithm=:LD_SLSQP)</code>, <code>NLoptSolver(algorithm=:LD_LBFGS)</code>. See <a href="https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/">NLopt algorithms</a> for all algorithms in <a href="https://github.com/JuliaOpt/NLopt.jl">NLopt.jl</a>.</li></ul><p>When optimization fails, user can always try another algorithm.</p><p>Use Ipopt (interior-point) solver</p><pre><code class="language-julia">polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(), 
+    IpoptSolver(print_level=3); wts = housing[:Freq])</code></pre><pre><code class="language-none">******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+Total number of variables............................:        8
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:        0
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        0
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+
+Number of Iterations....: 38
+
+                                   (scaled)                 (unscaled)
+Objective...............:   2.0594068522767617e+02    1.7395746495294738e+03
+Dual infeasibility......:   8.1478360269928591e-09    6.8824520931403241e-08
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
+Overall NLP error.......:   8.1478360269928591e-09    6.8824520931403241e-08
+
+
+Number of objective function evaluations             = 91
+Number of objective gradient evaluations             = 39
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 0
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 0
+Number of Lagrangian Hessian evaluations             = 0
+Total CPU secs in IPOPT (w/o function evaluations)   =      0.050
+Total CPU secs in NLP function evaluations           =      0.006
+
+EXIT: Optimal Solution Found.
+
+
+
+
+
+StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type + Cont
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.496135  0.124541 -3.98372   0.0002
+intercept2|3      0.690708  0.125212   5.5163    &lt;1e-6
+Infl: Medium      0.566394  0.104963  5.39613    &lt;1e-5
+Infl: High         1.28882  0.126705  10.1718   &lt;1e-14
+Type: Apartment   -0.57235  0.118747  -4.8199    &lt;1e-5
+Type: Atrium     -0.366186  0.156766 -2.33588   0.0226
+Type: Terrace     -1.09101  0.151514 -7.20077    &lt;1e-9
+Cont: High        0.360284 0.0953575  3.77825   0.0003</code></pre><p>Use SLSQP (sequential quadratic programming) in NLopt.jl package</p><pre><code class="language-julia">polr(@formula(Sat ~ Infl + Type + Cont), housing, LogitLink(), 
+    NLoptSolver(algorithm=:LD_SLSQP); wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type + Cont
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.496141  0.124541 -3.98376   0.0002
+intercept2|3      0.690706  0.125212  5.51628    &lt;1e-6
+Infl: Medium      0.566392  0.104963  5.39611    &lt;1e-5
+Infl: High         1.28881  0.126705  10.1718   &lt;1e-14
+Type: Apartment  -0.572352  0.118747 -4.81991    &lt;1e-5
+Type: Atrium     -0.366182  0.156766 -2.33586   0.0226
+Type: Terrace     -1.09101  0.151514 -7.20075    &lt;1e-9
+Cont: High        0.360284 0.0953574  3.77825   0.0003</code></pre><p>Use LBFGS (quasi-Newton algorithm) in NLopt.jl package</p><pre><code class="language-julia">polr(@formula(Sat ~ 0 + Infl + Type + Cont), housing, LogitLink(), 
+    NLoptSolver(algorithm=:LD_LBFGS); wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type + Cont
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.496111  0.124541 -3.98353   0.0002
+intercept2|3      0.690732  0.125212  5.51649    &lt;1e-6
+Infl: Medium      0.566394  0.104963  5.39613    &lt;1e-5
+Infl: High         1.28882  0.126705  10.1718   &lt;1e-14
+Type: Apartment  -0.572352  0.118747 -4.81991    &lt;1e-5
+Type: Atrium      -0.36616  0.156766 -2.33571   0.0227
+Type: Terrace     -1.09102  0.151514  -7.2008    &lt;1e-9
+Cont: High        0.360319 0.0953575  3.77861   0.0003</code></pre><h2><a class="nav-anchor" id="Likelihood-ratio-test-(LRT)-1" href="#Likelihood-ratio-test-(LRT)-1">Likelihood ratio test (LRT)</a></h2><p><code>polr</code> function calculates the Wald test (or t-test) p-value for each predictor in the model. To carry out the potentially more powerful likelihood ratio test (LRT), we need to fill the null and alternative models separately.</p><p><strong>Step 1</strong>: Fit the null model with only <code>Infl</code> and <code>Type</code> factors.</p><pre><code class="language-julia">house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.672949  0.115559 -5.82341    &lt;1e-6
+intercept2|3      0.505629  0.115147  4.39116    &lt;1e-4
+Infl: Medium      0.548392  0.104613  5.24213    &lt;1e-5
+Infl: High          1.2373  0.125448  9.86306   &lt;1e-13
+Type: Apartment  -0.521441  0.117616 -4.43341    &lt;1e-4
+Type: Atrium     -0.289347  0.155074 -1.86587   0.0666
+Type: Terrace     -1.01404   0.14976  -6.7711    &lt;1e-8</code></pre><p><strong>Step 2</strong>: To test significance of the <code>Cont</code> variable, we use <code>polrtest</code> function. The first argument is the fitted null model, the second argument is the predictor vector to be tested</p><pre><code class="language-julia"># last column of model matrix is coding for Cont (2-level factor)
+cont = modelmatrix(house_po.model)[:, end]
+# calculate p-value
+polrtest(house_null, cont; test=:LRT)</code></pre><pre><code class="language-none">0.000155351855453278</code></pre><h2><a class="nav-anchor" id="Score-test-1" href="#Score-test-1">Score test</a></h2><p>User can perform <strong>score test</strong> using the <code>polrtest</code> function too. Score test has the advantage that, when testing a huge number of predictors such as in genomewide association studies (GWAS), one only needs to fit the null model once and then testing each predictor is cheap. Both Wald and likelihood ratio test (LRT) need to fit a separate alternative model for each predictor being tested.</p><p><strong>Step 1</strong>: Fit the null model with only <code>Infl</code> and <code>Type</code> factors.</p><pre><code class="language-julia">house_null = polr(@formula(Sat ~ Infl + Type), housing; wts = housing[:Freq])</code></pre><pre><code class="language-none">StatsModels.DataFrameRegressionModel{OrdinalMultinomialModel{Int64,Float64,LogitLink},Array{Float64,2}}
+
+Formula: Sat ~ Infl + Type
+
+Coefficients:
+                  Estimate Std.Error  t value Pr(&gt;|t|)
+intercept1|2     -0.672949  0.115559 -5.82341    &lt;1e-6
+intercept2|3      0.505629  0.115147  4.39116    &lt;1e-4
+Infl: Medium      0.548392  0.104613  5.24213    &lt;1e-5
+Infl: High          1.2373  0.125448  9.86306   &lt;1e-13
+Type: Apartment  -0.521441  0.117616 -4.43341    &lt;1e-4
+Type: Atrium     -0.289347  0.155074 -1.86587   0.0666
+Type: Terrace     -1.01404   0.14976  -6.7711    &lt;1e-8</code></pre><p><strong>Step 2</strong>: To test significance of the <code>Cont</code> variable, we use <code>polrtest</code> function. The first argument is the fitted null model, the second argument is the predictor vector to be tested</p><pre><code class="language-julia"># last column of model matrix is coding for Cont (2-level factor)
+cont = modelmatrix(house_po.model)[:, end]
+# calculate p-value
+polrtest(house_null, cont; test=:score)</code></pre><pre><code class="language-none">0.0001648743597587817</code></pre><p><strong>Step 3</strong>: Now suppose we want to test significance of another predictor, <code>z1</code>. We just need to call <code>polrtest</code> with <code>z1</code> and the same fiited null model. No model fitting is needed.</p><p>For demonstration purpose, we generate <code>z1</code> randomly. The score test p-value of <code>z1</code> is, not suprisingly, large.</p><pre><code class="language-julia">z1 = randn(nobs(house_null))
+polrtest(house_null, z1)</code></pre><pre><code class="language-none">0.1673512522966108</code></pre><p><strong>Step 4</strong>: We can also test a set of precitors or a factor.</p><pre><code class="language-julia">z3 = randn(nobs(house_null), 3)
+polrtest(house_null, z3)</code></pre><pre><code class="language-none">6.709335149358069e-10</code></pre><footer><hr/></footer></article></body></html>
