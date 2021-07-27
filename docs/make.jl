@@ -1,14 +1,19 @@
 using Documenter, OrdinalMultinomialModels
 
-ENV["DOCUMENTER_DEBUG"] = "true"
-
 makedocs(
-    format = :html,
-    sitename = "OrdinalMultinomialModels",
-    modules = [OrdinalMultinomialModels]
+    format = Documenter.HTML(),
+    sitename = "OrdinalMultinomialModels.jl",
+    clean = true,
+    debug = true,
+    pages = [
+        "index.md"
+    ]
 )
 
 deploydocs(
     repo   = "github.com/OpenMendel/OrdinalMultinomialModels.jl.git",
-    target = "build"
+    target = "build",
+    deps = nothing,
+    make = nothing
 )
+
