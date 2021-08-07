@@ -11,6 +11,13 @@ OrdinalMultinomialModels.jl supports Julia v0.7 and later. See documentation for
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://OpenMendel.github.io/OrdinalMultinomialModels.jl/stable) [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://OpenMendel.github.io/OrdinalMultinomialModels.jl/latest)
 
 
+This package is registered in the default Julia package registry, and can be installed through standard package installation procedure: e.g., running the following code in Julia REPL.
+```julia
+using Pkg
+pkg"add OrdinalMultinomialModels"
+```
+
+
 ## Citation
 
 If you use [OpenMendel](https://openmendel.github.io) analysis packages in your research, please cite the following reference in the resulting publications:
