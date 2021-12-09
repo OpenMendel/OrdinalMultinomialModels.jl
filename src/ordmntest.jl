@@ -133,7 +133,11 @@ end
 
 function polrtest(
     d::OrdinalMultinomialLrtTest; 
-    solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
+    solver::TSOLVER) where {TSOLVER <: MOI.AbstractOptimizer}
+    if typeof(solver) == NLopt.Optimizer && !haskey(solver.options, "algorithm")
+        MOI.set(solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+        MOI.set(solver, MOI.RawOptimizerAttribute("max_iter"), 4000)
+    end
     am = polr(d.Xaug, d.nm.Y, d.nm.link, solver; wts = d.nm.wts)
     ccdf(Chisq(d.q), deviance(d.nm) - deviance(am))
 end

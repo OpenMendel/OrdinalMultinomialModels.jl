@@ -175,16 +175,67 @@ Fit ordered multinomial model by maximum likelihood estimation.
 # Output
 - `dd:OrdinalMultinomialModel`: an `OrdinalMultinomialModel` type.
 """
+# function fit(
+#     ::Type{M},
+#     X::AbstractMatrix,
+#     y::AbstractVecOrMat,
+#     link::GLM.Link = LogitLink(),
+#     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
+#     wts::AbstractVector = similar(X, 0)
+#     ) where M <: AbstractOrdinalMultinomialModel
+#     ydata = Vector{Int}(undef, size(y, 1))
+#     # set up optimization
+#     if size(y, 2) == 1
+#         ydata = denserank(y)
+#     else #y is encoded via dummy-encoding 
+#         for i in 1:size(y, 1)
+#             idx = findfirst(view(y, i, :) .== 1)
+#             ydata[i] = idx == nothing ? 1 : idx + 1
+#         end
+#     end
+#     #ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
+#     dd = OrdinalMultinomialModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
+#     m = MathProgBase.NonlinearModel(solver)
+#     lb = fill(-Inf, dd.npar)
+#     ub = fill( Inf, dd.npar)
+#     MathProgBase.loadproblem!(m, dd.npar, 0, lb, ub, Float64[], Float64[], :Max, dd)
+#     # initialize from LS solution
+#     β0 = [ones(length(ydata)) X] \ ydata
+#     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
+#     MathProgBase.setwarmstart!(m, par0)
+#     MathProgBase.optimize!(m)
+#     # ouput
+#     stat = MathProgBase.status(m)
+#     stat == :Optimal || @warn("Optimization unsuccesful; got $stat")
+#     xsol = MathProgBase.getsolution(m)
+#     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
+#     copyto!(dd.β, 1, xsol, dd.J, dd.p)
+#     loglikelihood!(dd, true, true)
+#     FIMbk = bunchkaufman(Symmetric(dd.FIM), check=false)
+#     if issuccess(FIMbk)
+#         dd.vcov[:] = inv(FIMbk)
+#     else # FIM is singular
+#         dd.vcov .= Inf
+#     end
+#     return dd
+# end
+
 function fit(
     ::Type{M},
     X::AbstractMatrix,
     y::AbstractVecOrMat,
     link::GLM.Link = LogitLink(),
-    solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
+    solver::TSOLVER = NLopt.Optimizer();
     wts::AbstractVector = similar(X, 0)
-    ) where M <: AbstractOrdinalMultinomialModel
+    ) where {M<:AbstractOrdinalMultinomialModel, TSOLVER<:MOI.AbstractOptimizer}
+    T = eltype(X)
     ydata = Vector{Int}(undef, size(y, 1))
     # set up optimization
+    # This is a hack since we can't initialize a solver with parameters already set
+    if typeof(solver) == NLopt.Optimizer && !haskey(solver.options, "algorithm")
+        MOI.set(solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+    end
+    
     if size(y, 2) == 1
         ydata = denserank(y)
     else #y is encoded via dummy-encoding 
@@ -195,19 +246,31 @@ function fit(
     end
     #ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
     dd = OrdinalMultinomialModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
-    m = MathProgBase.NonlinearModel(solver)
-    lb = fill(-Inf, dd.npar)
-    ub = fill( Inf, dd.npar)
-    MathProgBase.loadproblem!(m, dd.npar, 0, lb, ub, Float64[], Float64[], :Max, dd)
+    lb = T[]
+    ub = T[]
+    NLPBlock = MOI.NLPBlockData(
+        MOI.NLPBoundsPair.(lb, ub), dd, true
+    )
     # initialize from LS solution
     β0 = [ones(length(ydata)) X] \ ydata
     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
-    MathProgBase.setwarmstart!(m, par0)
-    MathProgBase.optimize!(m)
-    # ouput
-    stat = MathProgBase.status(m)
-    stat == :Optimal || @warn("Optimization unsuccesful; got $stat")
-    xsol = MathProgBase.getsolution(m)
+    
+    params = MOI.add_variables(solver, dd.npar)
+    for i in 1:dd.npar
+        MOI.set(solver, MOI.VariablePrimalStart(), params[i], par0[i])
+    end
+
+    MOI.set(solver, MOI.NLPBlock(), NLPBlock)
+    MOI.set(solver, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+
+    MOI.optimize!(solver)
+    # output
+    stat = MOI.get(solver, MOI.TerminationStatus())
+    stat == MOI.OPTIMAL || @warn("Optimization unsuccessful; got $stat")
+    xsol = similar(par0)
+    for i in eachindex(xsol)
+        xsol[i] = MOI.get(solver, MOI.VariablePrimal(), MOI.VariableIndex(i))
+    end
     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
     copyto!(dd.β, 1, xsol, dd.J, dd.p)
     loglikelihood!(dd, true, true)
@@ -218,26 +281,33 @@ function fit(
         dd.vcov .= Inf
     end
     return dd
+
 end
 
-function MathProgBase.initialize(m::OrdinalMultinomialModel,
+function MathOptInterface.initialize(
+    m::OrdinalMultinomialModel,
     requested_features::Vector{Symbol})
     for feat in requested_features
-        if !(feat in [:Grad])
+        if !(feat in MOI.features_available(m))
             error("Unsupported feature $feat")
         end
     end
 end
 
-MathProgBase.features_available(m::OrdinalMultinomialModel) = [:Grad]
+MathOptInterface.features_available(m::OrdinalMultinomialModel) = [:Grad]
 
-function MathProgBase.eval_f(m::OrdinalMultinomialModel, par::Vector)
+function MathOptInterface.eval_objective(
+    m::OrdinalMultinomialModel,
+    par::Vector)
     copyto!(m.α, 1, par, 1, m.J - 1)
     copyto!(m.β, 1, par, m.J, m.p)
     loglikelihood!(m, false, false)
 end
 
-function MathProgBase.eval_grad_f(m::OrdinalMultinomialModel, grad::Vector, par::Vector)
+function MathOptInterface.eval_objective_gradient(
+    m::OrdinalMultinomialModel,
+    grad::Vector,
+    par::Vector)
     copyto!(m.α, 1, par, 1, m.J - 1)
     copyto!(m.β, 1, par, m.J, m.p)
     loglikelihood!(m, true, false)

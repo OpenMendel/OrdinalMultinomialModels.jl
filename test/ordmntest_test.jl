@@ -18,8 +18,8 @@ Y = rpolr(Xtrue, βtrue, θ, link)
 # Gradient based: LD_LBFGS, :LD_MMA, :LD_SLSQP, :LD_CCSAQ, :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON_PRECOND, :LD_TNEWTON_RESTART, :LD_VAR2, :LD_VAR1
 # Gradient free: :LN_COBYLA
 # solver = NLoptSolver(algorithm=:LD_LBFGS)
-solver = IpoptSolver() # more stable but take a lot more iterations
-@time dd = polr(X, Y, link, solver)
+solver = Ipopt.Optimizer() # more stable but take a lot more iterations
+@time dd = polr(X, Y, link, solver;)
 @show dd.θ, dd.β
 @show stderror(dd)
 

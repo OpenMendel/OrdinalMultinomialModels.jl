@@ -8,11 +8,13 @@ using Distributions, Reexport, StatsModels
 @reexport using GLM
 @reexport using Ipopt
 @reexport using NLopt
-using MathProgBase
+using MathOptInterface
 import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
 response, score, stderror, weights
 import StatsModels: drop_intercept
 import LinearAlgebra: BlasReal
+
+const MOI = MathOptInterface
 
 export
     # types
@@ -55,7 +57,7 @@ drop_intercept(::Type{AbstractOrdinalMultinomialModel}) = true
 Data, parameters, and various derived variables for the proportional odds
 logistic regression model.
 """
-struct OrdinalMultinomialModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
+struct OrdinalMultinomialModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MOI.AbstractNLPEvaluator
     # dimensions
     "`n`: number of observations"
     n::Int
