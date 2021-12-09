@@ -148,7 +148,7 @@ Fit ordered multinomial model by maximum likelihood estimation.
 - `y::Vector`: integer vector taking values in `1,...,J`.
 - `X::Matrix`: `n x p` covariate matrix excluding intercept.
 - `link::GLM.Link`: `LogitLink()` (default), `ProbitLink()`, `CauchitLink()`, or `CloglogLink()`.
-- `solver`: `NLoptSolver()` (default) or `IpoptSolver()`.
+- `solver`: An instance of `Ipopt.Optimizer()` or `NLopt.Optimizer()` (default).
 
 # Keyword arguments
 - `wts::AbstractVector=similar(X, 0)`: observation weights.
@@ -170,7 +170,7 @@ Fit ordered multinomial model by maximum likelihood estimation.
 - `y::Vector`: integer vector taking values in `1,...,J`.
 - `X::Matrix`: `n x p` covariate matrix excluding intercept.
 - `link::GLM.Link`: `LogitLink()`, `ProbitLink()`, `CauchitLink()`, or `CloglogLink()`.
-- `solver`: `IpoptSolver()` or `NLoptSolver()`.
+- `solver`: An instance of `Ipopt.Optimizer()` or `NLopt.Optimizer()` (default).
 
 # Output
 - `dd:OrdinalMultinomialModel`: an `OrdinalMultinomialModel` type.
@@ -232,8 +232,12 @@ function fit(
     ydata = Vector{Int}(undef, size(y, 1))
     # set up optimization
     # This is a hack since we can't initialize a solver with parameters already set
-    if typeof(solver) == NLopt.Optimizer && !haskey(solver.options, "algorithm")
-        MOI.set(solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+    if typeof(solver) == NLopt.Optimizer
+        algo = MOI.get(solver, MOI.RawOptimizerAttribute("algorithm"))
+        if algo == :none
+            MOI.set(solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+            MOI.set(solver, MOI.RawOptimizerAttribute("max_iter"), 4000)
+        end
     end
     
     if size(y, 2) == 1
@@ -266,7 +270,7 @@ function fit(
     MOI.optimize!(solver)
     # output
     stat = MOI.get(solver, MOI.TerminationStatus())
-    stat == MOI.OPTIMAL || @warn("Optimization unsuccessful; got $stat")
+    stat == MOI.LOCALLY_SOLVED || @warn("Optimization unsuccessful; got $stat")
     xsol = similar(par0)
     for i in eachindex(xsol)
         xsol[i] = MOI.get(solver, MOI.VariablePrimal(), MOI.VariableIndex(i))
