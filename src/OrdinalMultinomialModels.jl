@@ -46,7 +46,8 @@ export
     score,
     stderror,
     vcov,
-    weights
+    weights,
+    set_optimizer_attributes
 
 abstract type AbstractOrdinalMultinomialModel <: RegressionModel end
 drop_intercept(::Type{AbstractOrdinalMultinomialModel}) = true
@@ -180,6 +181,16 @@ function cor(m::OrdinalMultinomialModel)
         invstd[i] = 1 / sqrt(Σ[i, i])
     end
     lmul!(Diagonal(invstd), rmul!(Σ, Diagonal(invstd)))
+end
+
+function set_optimizer_attributes(m::MathOptInterface.AbstractOptimizer, pairs::Pair...)
+    for (name, value) in pairs
+        MathOptInterface.set(
+            m,
+            MathOptInterface.RawOptimizerAttribute(name),
+            value
+        )
+    end
 end
 
 include("ordmnrand.jl")

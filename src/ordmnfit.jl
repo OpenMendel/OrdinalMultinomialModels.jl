@@ -175,51 +175,6 @@ Fit ordered multinomial model by maximum likelihood estimation.
 # Output
 - `dd:OrdinalMultinomialModel`: an `OrdinalMultinomialModel` type.
 """
-# function fit(
-#     ::Type{M},
-#     X::AbstractMatrix,
-#     y::AbstractVecOrMat,
-#     link::GLM.Link = LogitLink(),
-#     solver = NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000);
-#     wts::AbstractVector = similar(X, 0)
-#     ) where M <: AbstractOrdinalMultinomialModel
-#     ydata = Vector{Int}(undef, size(y, 1))
-#     # set up optimization
-#     if size(y, 2) == 1
-#         ydata = denserank(y)
-#     else #y is encoded via dummy-encoding 
-#         for i in 1:size(y, 1)
-#             idx = findfirst(view(y, i, :) .== 1)
-#             ydata[i] = idx == nothing ? 1 : idx + 1
-#         end
-#     end
-#     #ydata = denserank(y) # dense ranking of y, http://juliastats.github.io/StatsBase.jl/stable/ranking.html#StatsBase.denserank
-#     dd = OrdinalMultinomialModel(X, ydata, convert(Vector{eltype(X)}, wts), link)
-#     m = MathProgBase.NonlinearModel(solver)
-#     lb = fill(-Inf, dd.npar)
-#     ub = fill( Inf, dd.npar)
-#     MathProgBase.loadproblem!(m, dd.npar, 0, lb, ub, Float64[], Float64[], :Max, dd)
-#     # initialize from LS solution
-#     β0 = [ones(length(ydata)) X] \ ydata
-#     par0 = [β0[1] - dd.J / 2 + 1; zeros(dd.J - 2); β0[2:end]]
-#     MathProgBase.setwarmstart!(m, par0)
-#     MathProgBase.optimize!(m)
-#     # ouput
-#     stat = MathProgBase.status(m)
-#     stat == :Optimal || @warn("Optimization unsuccesful; got $stat")
-#     xsol = MathProgBase.getsolution(m)
-#     copyto!(dd.α, 1, xsol, 1, dd.J - 1)
-#     copyto!(dd.β, 1, xsol, dd.J, dd.p)
-#     loglikelihood!(dd, true, true)
-#     FIMbk = bunchkaufman(Symmetric(dd.FIM), check=false)
-#     if issuccess(FIMbk)
-#         dd.vcov[:] = inv(FIMbk)
-#     else # FIM is singular
-#         dd.vcov .= Inf
-#     end
-#     return dd
-# end
-
 function fit(
     ::Type{M},
     X::AbstractMatrix,
