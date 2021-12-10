@@ -1,12 +1,17 @@
 module PolrfitTest
 
-using Test, OrdinalMultinomialModels, RDatasets
+using Test, OrdinalMultinomialModels, RDatasets, MathOptInterface
+const MOI = MathOptInterface
 
 housing = dataset("MASS", "housing")
 @info "Housing example for `polr` function in R package MASS"
 
 @testset "logit link" begin
-    for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
+    Ipopt_solver = Ipopt.Optimizer()
+    MOI.set(Ipopt_solver, MOI.RawOptimizerAttribute("print_level"), 0)
+    NLopt_solver = NLopt.Optimizer()
+    MOI.set(NLopt_solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+    for solver in [Ipopt_solver, NLopt_solver]
         houseplr = polr(@formula(Sat ~ Infl + Type + Cont), housing,
             LogitLink(), solver; wts = housing[!, :Freq])
         @test nobs(houseplr) == 72
@@ -29,7 +34,11 @@ housing = dataset("MASS", "housing")
 end
 
 @testset "probit link" begin
-    for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
+    Ipopt_solver = Ipopt.Optimizer()
+    MOI.set(Ipopt_solver, MOI.RawOptimizerAttribute("print_level"), 0)
+    NLopt_solver = NLopt.Optimizer()
+    MOI.set(NLopt_solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+    for solver in [Ipopt_solver, NLopt_solver]
         houseplr = polr(@formula(Sat ~ Infl + Type + Cont), housing,
             ProbitLink(), solver; wts = housing[!, :Freq])
         @test nobs(houseplr) == 72
@@ -41,7 +50,11 @@ end
 end
 
 @testset "cloglog link" begin
-    for solver in [IpoptSolver(print_level=0), NLoptSolver(algorithm=:LD_SLSQP)]
+    Ipopt_solver = Ipopt.Optimizer()
+    MOI.set(Ipopt_solver, MOI.RawOptimizerAttribute("print_level"), 0)
+    NLopt_solver = NLopt.Optimizer()
+    MOI.set(NLopt_solver, MOI.RawOptimizerAttribute("algorithm"), :LD_SLSQP)
+    for solver in [Ipopt_solver, NLopt_solver]
         houseplr = polr(@formula(Sat ~ Infl + Type + Cont), housing,
             CloglogLink(), solver; wts = housing[!, :Freq])
         @test nobs(houseplr) == 72

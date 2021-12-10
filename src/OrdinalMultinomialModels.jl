@@ -8,11 +8,13 @@ using Distributions, Reexport, StatsModels
 @reexport using GLM
 @reexport using Ipopt
 @reexport using NLopt
-using MathProgBase
+using MathOptInterface
 import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
 response, score, stderror, weights
 import StatsModels: drop_intercept
 import LinearAlgebra: BlasReal
+
+const MOI = MathOptInterface
 
 export
     # types
@@ -44,7 +46,8 @@ export
     score,
     stderror,
     vcov,
-    weights
+    weights,
+    set_optimizer_attributes
 
 abstract type AbstractOrdinalMultinomialModel <: RegressionModel end
 drop_intercept(::Type{AbstractOrdinalMultinomialModel}) = true
@@ -55,7 +58,7 @@ drop_intercept(::Type{AbstractOrdinalMultinomialModel}) = true
 Data, parameters, and various derived variables for the proportional odds
 logistic regression model.
 """
-struct OrdinalMultinomialModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MathProgBase.AbstractNLPEvaluator
+struct OrdinalMultinomialModel{TY<:Integer, T<:BlasReal, TL<:GLM.Link} <: MOI.AbstractNLPEvaluator
     # dimensions
     "`n`: number of observations"
     n::Int
@@ -178,6 +181,16 @@ function cor(m::OrdinalMultinomialModel)
         invstd[i] = 1 / sqrt(Σ[i, i])
     end
     lmul!(Diagonal(invstd), rmul!(Σ, Diagonal(invstd)))
+end
+
+function set_optimizer_attributes(m::MathOptInterface.AbstractOptimizer, pairs::Pair...)
+    for (name, value) in pairs
+        MathOptInterface.set(
+            m,
+            MathOptInterface.RawOptimizerAttribute(name),
+            value
+        )
+    end
 end
 
 include("ordmnrand.jl")
