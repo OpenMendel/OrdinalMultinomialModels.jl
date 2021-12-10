@@ -10,3 +10,5 @@ deps/deps.jl
 
 .ipynb_checkpoints/
 .vscode/settings.json
+
+Manifest.toml
