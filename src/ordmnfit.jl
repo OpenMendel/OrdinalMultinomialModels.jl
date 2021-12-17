@@ -186,6 +186,7 @@ function fit(
     T = eltype(X)
     ydata = Vector{Int}(undef, size(y, 1))
     # set up optimization
+    MOI.empty!(solver)
     # This is a hack since we can't initialize a solver with parameters already set
     if typeof(solver) == NLopt.Optimizer
         algo = MOI.get(solver, MOI.RawOptimizerAttribute("algorithm"))
