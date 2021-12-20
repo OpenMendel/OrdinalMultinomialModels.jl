@@ -2,7 +2,7 @@ name = "OrdinalMultinomialModels"
 uuid = "b51826c6-2bc1-4eb0-a3af-c080fd29f1d0"
 keywords = ["ordered multinomial model", "proportional odds model", "proportional hazards model"]
 author = ["Hua Zhou <huazhou@ucla.edu>", "Chris German <germc3@ucla.edu>", "OpenMendel Team"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
