@@ -10,7 +10,7 @@ using Distributions, Reexport, StatsModels
 @reexport using NLopt
 using MathOptInterface
 import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
-response, score, stderror, weights
+response, score, stderror, weights, predict
 import StatsModels: drop_intercept
 import LinearAlgebra: BlasReal
 
@@ -150,11 +150,10 @@ coef(m::OrdinalMultinomialModel) = [m.θ; m.β]
 deviance(m::OrdinalMultinomialModel) = -2loglikelihood!(m, false, false)
 dof(m::OrdinalMultinomialModel) = m.npar
 dof_residual(m::OrdinalMultinomialModel) = m.n - m.npar
-fitted(m::OrdinalMultinomialModel) = nothing # TODO
+fitted(m::OrdinalMultinomialModel) = predict(m, m.X;kind=:probs) 
 loglikelihood(m::OrdinalMultinomialModel) = loglikelihood!(m, false, false)
 modelmatrix(m::OrdinalMultinomialModel) = m.X
 nobs(m::OrdinalMultinomialModel) = m.n
-predict(m::OrdinalMultinomialModel) = nothing # TODO
 response(m::OrdinalMultinomialModel) = m.Y
 score(m::OrdinalMultinomialModel) = m.∇
 stderror(m::OrdinalMultinomialModel) = sqrt.(diag(m.vcov))

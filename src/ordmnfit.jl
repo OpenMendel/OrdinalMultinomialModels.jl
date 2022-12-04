@@ -136,6 +136,34 @@ function loglikelihood!(
 end
 
 """
+predict(m, newX; kind::Symbol=:class)
+return prediction
+# Keyword arguments:
+- `kind::Symbol=:class`: return integer class or :probs  - probabilities for each class
+"""
+function predict(m::OrdinalMultinomialModel, newX::Matrix{T}; kind::Symbol=:class) where {T <: BlasReal} # 
+    n, p   = size(newX)
+    eta      = zeros(T, n)
+    mul!(eta, newX, m.β)
+
+    cumpr = GLM.linkinv.(m.link, transpose(m.θ) .- eta )
+
+    mydiff(x) = ( x[:,2:end] .- x[:,1:end-1] )
+
+    # cumpr <- matrix(pfun(matrix(object$zeta, n, q, byrow=TRUE) - eta), , q)
+    #     Y <- t(apply(cumpr, 1L, function(x) diff(c(0, x, 1))))
+
+    Y = mydiff([zeros(n) cumpr ones(n)])
+
+    if kind == :probs
+         return Y
+    else
+         return dropdims(getindex.(findmax(Y,dims=2)[2],2),dims=2)
+    end
+    return Y
+end
+
+"""
     polr(formula, df, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
     polr(X, y, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
 
