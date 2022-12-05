@@ -170,6 +170,16 @@ function term_names(t::CategoricalTerm,J)
     [Symbol("$(t.contrasts.levels[i])") for i in 1:J]
 end
 
+function convert_to_categorical_if_needed(t::ContinuousTerm,out) 
+    return out
+end
+
+function convert_to_categorical_if_needed(t::CategoricalTerm,out) 
+    _out=categorical(out)
+    return recode(_out, (j=>i for (i,j) in t.contrasts.invindex)...)
+end
+
+
 function StatsModels.predict(mm::StatsModels.TableRegressionModel{T, S}, 
     data; kwargs...) where {T <: OrdinalMultinomialModel, S <: Matrix}
 
@@ -180,14 +190,14 @@ function StatsModels.predict(mm::StatsModels.TableRegressionModel{T, S},
     new_x = modelcols(f.rhs, cols)
     y_pred = predict(mm.model, reshape(new_x, size(new_x, 1), :);kwargs...)
 
-    if size(y_pred, 2) == 1 # assume return classes
-        out = Vector{Union{eltype(y_pred),Missing}}(missing, length(nonmissings))
-        out[nonmissings] = y_pred
-        return out
+    if size(y_pred, 2) == 1 # assume return classes, convert to CategoricalArray if original lhs was categorical
+        _out = Vector{Union{eltype(y_pred),Missing}}(missing, length(nonmissings))
+        _out[nonmissings] = y_pred
+        return convert_to_categorical_if_needed(f.lhs,_out)
     else # assume return probs
         _out=Matrix{Union{eltype(y_pred),Missing}}(missing, length(nonmissings), size(y_pred, 2))
         _out[nonmissings,:] = y_pred
-        return Tables.materializer(data)(;zip(term_names(f.lhs,mm.model.J), eachslice(_out, dims=2))...)
+        return Tables.materializer(data)(;zip(term_names(f.lhs, mm.model.J), eachslice(_out, dims=2))...)
     end
 end
 

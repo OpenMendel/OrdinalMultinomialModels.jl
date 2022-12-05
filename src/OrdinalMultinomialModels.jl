@@ -5,6 +5,7 @@ module OrdinalMultinomialModels
 using LinearAlgebra
 using Distributions, Reexport, StatsModels
 using Tables
+using CategoricalArrays
 @reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
