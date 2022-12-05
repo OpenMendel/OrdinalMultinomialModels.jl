@@ -4,13 +4,15 @@ module OrdinalMultinomialModels
 
 using LinearAlgebra
 using Distributions, Reexport, StatsModels
+using Tables
+using CategoricalArrays
 @reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
 @reexport using NLopt
 using MathOptInterface
 import StatsBase: coef, coeftable, deviance, dof, fit, modelmatrix, nobs, 
-response, score, stderror, weights
+response, score, stderror, weights, predict
 import StatsModels: drop_intercept
 import LinearAlgebra: BlasReal
 
@@ -41,6 +43,7 @@ export
     fit,
     fitted,
     predict,
+    predict_p,
     response,
     rpolr,
     score,
@@ -150,11 +153,11 @@ coef(m::OrdinalMultinomialModel) = [m.θ; m.β]
 deviance(m::OrdinalMultinomialModel) = -2loglikelihood!(m, false, false)
 dof(m::OrdinalMultinomialModel) = m.npar
 dof_residual(m::OrdinalMultinomialModel) = m.n - m.npar
-fitted(m::OrdinalMultinomialModel) = nothing # TODO
+fitted(m::OrdinalMultinomialModel) = predict(m, m.X; kind=:probs) 
+fitted(m::StatsModels.TableRegressionModel{T, S} where {T <: OrdinalMultinomialModel, S <: Matrix}) = predict(m, m.mf.data;kind=:probs)
 loglikelihood(m::OrdinalMultinomialModel) = loglikelihood!(m, false, false)
 modelmatrix(m::OrdinalMultinomialModel) = m.X
 nobs(m::OrdinalMultinomialModel) = m.n
-predict(m::OrdinalMultinomialModel) = nothing # TODO
 response(m::OrdinalMultinomialModel) = m.Y
 score(m::OrdinalMultinomialModel) = m.∇
 stderror(m::OrdinalMultinomialModel) = sqrt.(diag(m.vcov))

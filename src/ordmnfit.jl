@@ -136,6 +136,78 @@ function loglikelihood!(
 end
 
 """
+predict(m, newX; kind::Symbol=:class)
+return prediction
+# Keyword arguments:
+- `kind::Symbol=:class`: return integer class or :probs  - probabilities for each class
+"""
+function predict(m::OrdinalMultinomialModel, newX::Matrix{T}; kind::Symbol=:class) where {T <: BlasReal} # 
+    n, p   = size(newX)
+    eta      = zeros(T, n)
+    mul!(eta, newX, m.β)
+
+    cumpr = GLM.linkinv.(m.link, transpose(m.θ) .- eta )
+
+    mydiff(x) = ( x[:,2:end] .- x[:,1:end-1] )
+
+    # cumpr <- matrix(pfun(matrix(object$zeta, n, q, byrow=TRUE) - eta), , q)
+    #     Y <- t(apply(cumpr, 1L, function(x) diff(c(0, x, 1))))
+
+    Y = mydiff([zeros(n) cumpr ones(n)])
+
+    if kind == :probs
+         return Y
+    else
+         return dropdims(getindex.(findmax(Y,dims=2)[2],2),dims=2)
+    end
+end
+
+function term_names(t::ContinuousTerm,J)
+    [Symbol("$i") for i in 1:J]
+end
+
+function term_names(t::CategoricalTerm,J)
+    [Symbol("$(t.contrasts.levels[i])") for i in 1:J]
+end
+
+function convert_to_categorical_if_needed(t::ContinuousTerm,out) 
+    return out
+end
+
+function convert_to_categorical_if_needed(t::CategoricalTerm,out) 
+    _out=categorical(out)
+    return recode(_out, (j=>i for (i,j) in t.contrasts.invindex)...)
+end
+
+
+function StatsModels.predict(mm::StatsModels.TableRegressionModel{T, S}, 
+    data; kwargs...) where {T <: OrdinalMultinomialModel, S <: Matrix}
+
+    Tables.istable(data) ||
+        throw(ArgumentError("expected data in a Table, got $(typeof(data))"))
+    f = mm.mf.f
+    cols, nonmissings = StatsModels.missing_omit(columntable(data), f.rhs)
+    new_x = modelcols(f.rhs, cols)
+    y_pred = predict(mm.model, reshape(new_x, size(new_x, 1), :);kwargs...)
+
+    if size(y_pred, 2) == 1 # assume return classes, convert to CategoricalArray if original lhs was categorical
+        _out = Vector{Union{eltype(y_pred),Missing}}(missing, length(nonmissings))
+        _out[nonmissings] = y_pred
+        return convert_to_categorical_if_needed(f.lhs,_out)
+    else # assume return probs
+        _out=Matrix{Union{eltype(y_pred),Missing}}(missing, length(nonmissings), size(y_pred, 2))
+        _out[nonmissings,:] = y_pred
+        return Tables.materializer(data)((;zip(term_names(f.lhs, mm.model.J), eachslice(_out, dims=2))...))
+    end
+end
+
+function predict_p(mm::StatsModels.TableRegressionModel{T, S}, 
+    data; kwargs...) where {T <: OrdinalMultinomialModel, S <: Matrix}
+
+    return StatsModels.predict(mm,data;kind=:probs,kwargs...)
+end
+
+"""
     polr(formula, df, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
     polr(X, y, link, solver=NLoptSolver(algorithm=:LD_SLSQP, maxeval=4000))
 
@@ -275,10 +347,19 @@ function MathOptInterface.eval_objective_gradient(
     copyto!(grad, m.J, m.∇, m.J, m.p)
 end
 
+function intercept_names(t::ContinuousTerm,J)
+    ["intercept $i|$(i+1)" for i in 1:(J - 1)]
+end
+
+function intercept_names(t::CategoricalTerm,J)
+    ["intercept $(t.contrasts.levels[i])|$(t.contrasts.levels[i+1])" for i in 1:(J - 1)]
+end
+
 function StatsModels.coeftable(mod::StatsModels.TableRegressionModel{T, S} 
     where {T <: OrdinalMultinomialModel, S <: Matrix} )
     ct = coeftable(mod.model)
-    cfnames = [["intercept$i|$(i+1)" for i in 1:(mod.model.J - 1)]; coefnames(mod)]
+    cfnames  = [ intercept_names(mod.mf.f.lhs,mod.model.J); coefnames(mod)]
+    #cfnames = [["intercept$i|$(i+1)" for i in 1:(mod.model.J - 1)]; coefnames(mod)]
     if length(ct.rownms) == length(cfnames)
         ct.rownms = cfnames
     end
