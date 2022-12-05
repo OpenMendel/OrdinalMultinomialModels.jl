@@ -153,7 +153,8 @@ coef(m::OrdinalMultinomialModel) = [m.θ; m.β]
 deviance(m::OrdinalMultinomialModel) = -2loglikelihood!(m, false, false)
 dof(m::OrdinalMultinomialModel) = m.npar
 dof_residual(m::OrdinalMultinomialModel) = m.n - m.npar
-fitted(m::OrdinalMultinomialModel) = predict(m, m.X;kind=:probs) 
+fitted(m::OrdinalMultinomialModel) = predict(m, m.X; kind=:probs) 
+fitted(m::StatsModels.TableRegressionModel{T, S} where {T <: OrdinalMultinomialModel, S <: Matrix}) = predict(m, m.mf.data;kind=:probs)
 loglikelihood(m::OrdinalMultinomialModel) = loglikelihood!(m, false, false)
 modelmatrix(m::OrdinalMultinomialModel) = m.X
 nobs(m::OrdinalMultinomialModel) = m.n

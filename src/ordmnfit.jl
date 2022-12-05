@@ -197,7 +197,7 @@ function StatsModels.predict(mm::StatsModels.TableRegressionModel{T, S},
     else # assume return probs
         _out=Matrix{Union{eltype(y_pred),Missing}}(missing, length(nonmissings), size(y_pred, 2))
         _out[nonmissings,:] = y_pred
-        return Tables.materializer(data)(;zip(term_names(f.lhs, mm.model.J), eachslice(_out, dims=2))...)
+        return Tables.materializer(data)((;zip(term_names(f.lhs, mm.model.J), eachslice(_out, dims=2))...))
     end
 end
 
