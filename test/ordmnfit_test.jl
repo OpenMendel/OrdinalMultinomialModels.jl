@@ -1,6 +1,7 @@
 module PolrfitTest
 
 using Test, OrdinalMultinomialModels, RDatasets, MathOptInterface, DelimitedFiles
+using Tables, CategoricalArrays
 const MOI = MathOptInterface
 
 housing = dataset("MASS", "housing")
@@ -9,6 +10,31 @@ housing = dataset("MASS", "housing")
 ref_fitted_logistic=readdlm("fitted.logistic.csv",',',header=true)[1]
 ref_fitted_probit=readdlm("fitted.probit.csv",',',header=true)[1]
 ref_fitted_cloglog=readdlm("fitted.cloglog.csv",',',header=true)[1]
+
+@testset "interface" begin
+    houseplr1 = polr(@formula(Sat ~ Infl + Type + Cont), housing,
+            LogitLink(), wts = housing[!, :Freq])
+    
+    @test Tables.istable(fitted(houseplr1))
+    @test Tables.istable(predict(houseplr1, housing,kind=:probs))
+    @test typeof(predict(houseplr1, housing, kind=:class)) <: CategoricalArray
+
+    X = StatsModels.modelmatrix(@formula(Sat ~ Infl + Type + Cont).rhs,housing)
+    Y = levelcode.(housing.Sat)
+    houseplr2 = polr(X,Y,
+            LogitLink(),wts = housing[!, :Freq])
+
+    @test typeof(fitted(houseplr2)) <: AbstractMatrix
+    @test typeof(predict(houseplr2, X, kind=:class)) <: Vector
+    
+    # mixed case, most similar to the old behaviour
+    housing.S = levelcode.(housing.Sat)
+    houseplr3 = polr(@formula(S ~ Infl + Type + Cont), housing, 
+            LogitLink(),wts = housing[!, :Freq])
+    @test Tables.istable(fitted(houseplr3))
+    @test typeof(predict(houseplr3, housing, kind=:class)) <: Vector
+    @test Tables.istable(predict(houseplr3, housing, kind=:probs))
+end
 
 @testset "logit link" begin
     Ipopt_solver = Ipopt.Optimizer()
@@ -25,7 +51,6 @@ ref_fitted_cloglog=readdlm("fitted.cloglog.csv",',',header=true)[1]
         @test isapprox(stderror(houseplr), [0.124541, 0.125212, 0.104963, 0.126705, 0.118747, 0.156766, 0.151514, 0.0953575]; rtol=1e-4)
         @test loglikelihood(houseplr.model) ≈ -1739.5746495294738
         @test isapprox(fitted(houseplr.model), ref_fitted_logistic; rtol=1e-4) 
-        #@test isapprox(predict(houseplr.model,houseplr.model.X), ref_fitted_logistic; rtol=1e-4) # TODO: fix this!
         @test response(houseplr.model) === houseplr.model.Y
         @test modelmatrix(houseplr.model) === houseplr.model.X
         @test score(houseplr.model) === houseplr.model.∇
