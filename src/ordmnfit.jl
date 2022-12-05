@@ -160,7 +160,41 @@ function predict(m::OrdinalMultinomialModel, newX::Matrix{T}; kind::Symbol=:clas
     else
          return dropdims(getindex.(findmax(Y,dims=2)[2],2),dims=2)
     end
-    return Y
+end
+
+function term_names(t::ContinuousTerm,J)
+    [Symbol("$i") for i in 1:J]
+end
+
+function term_names(t::CategoricalTerm,J)
+    [Symbol("$(t.contrasts.levels[i])") for i in 1:J]
+end
+
+function StatsModels.predict(mm::StatsModels.TableRegressionModel{T, S}, 
+    data; kwargs...) where {T <: OrdinalMultinomialModel, S <: Matrix}
+
+    Tables.istable(data) ||
+        throw(ArgumentError("expected data in a Table, got $(typeof(data))"))
+    f = mm.mf.f
+    cols, nonmissings = StatsModels.missing_omit(columntable(data), f.rhs)
+    new_x = modelcols(f.rhs, cols)
+    y_pred = predict(mm.model, reshape(new_x, size(new_x, 1), :);kwargs...)
+
+    if size(y_pred, 2) == 1 # assume return classes
+        out = Vector{Union{eltype(y_pred),Missing}}(missing, length(nonmissings))
+        out[nonmissings] = y_pred
+        return out
+    else # assume return probs
+        _out=Matrix{Union{eltype(y_pred),Missing}}(missing, length(nonmissings), size(y_pred, 2))
+        _out[nonmissings,:] = y_pred
+        return Tables.materializer(data)(;zip(term_names(f.lhs,mm.model.J), eachslice(_out, dims=2))...)
+    end
+end
+
+function predict_p(mm::StatsModels.TableRegressionModel{T, S}, 
+    data; kwargs...) where {T <: OrdinalMultinomialModel, S <: Matrix}
+
+    return StatsModels.predict(mm,data;kind=:probs,kwargs...)
 end
 
 """
@@ -303,10 +337,19 @@ function MathOptInterface.eval_objective_gradient(
     copyto!(grad, m.J, m.∇, m.J, m.p)
 end
 
+function intercept_names(t::ContinuousTerm,J)
+    ["intercept $i|$(i+1)" for i in 1:(J - 1)]
+end
+
+function intercept_names(t::CategoricalTerm,J)
+    ["intercept $(t.contrasts.levels[i])|$(t.contrasts.levels[i+1])" for i in 1:(J - 1)]
+end
+
 function StatsModels.coeftable(mod::StatsModels.TableRegressionModel{T, S} 
     where {T <: OrdinalMultinomialModel, S <: Matrix} )
     ct = coeftable(mod.model)
-    cfnames = [["intercept$i|$(i+1)" for i in 1:(mod.model.J - 1)]; coefnames(mod)]
+    cfnames  = [ intercept_names(mod.mf.f.lhs,mod.model.J); coefnames(mod)]
+    #cfnames = [["intercept$i|$(i+1)" for i in 1:(mod.model.J - 1)]; coefnames(mod)]
     if length(ct.rownms) == length(cfnames)
         ct.rownms = cfnames
     end

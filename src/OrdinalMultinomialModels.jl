@@ -4,6 +4,7 @@ module OrdinalMultinomialModels
 
 using LinearAlgebra
 using Distributions, Reexport, StatsModels
+using Tables
 @reexport using StatsBase
 @reexport using GLM
 @reexport using Ipopt
@@ -41,6 +42,7 @@ export
     fit,
     fitted,
     predict,
+    predict_p,
     response,
     rpolr,
     score,
